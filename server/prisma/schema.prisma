@@ -30,13 +30,15 @@ model User {
   emailVerificationToken       String?
   emailVerificationTokenExpiry DateTime?
   matchParticipants            MatchParticipant[]
+  matchesWon                   Match[]            
   rating                       Int
 }
 
 model Match {
   id           String             @id @default(uuid())
   participants MatchParticipant[]
-  winnerId     String
+  winnerId     String?
+  winner       User?              @relation(fields: [winnerId], references: [id])
   problem      Problem            @relation(fields: [problemId], references: [id])
   problemId    String
   playedAt     DateTime           @default(now())
