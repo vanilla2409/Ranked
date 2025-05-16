@@ -20,7 +20,7 @@ CREATE TABLE "User" (
 -- CreateTable
 CREATE TABLE "Match" (
     "id" TEXT NOT NULL,
-    "winnerId" TEXT NOT NULL,
+    "winnerId" TEXT,
     "problemId" TEXT NOT NULL,
     "playedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -39,8 +39,9 @@ CREATE TABLE "MatchParticipant" (
 -- CreateTable
 CREATE TABLE "Problem" (
     "id" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
     "description" TEXT NOT NULL,
-    "testCases" JSONB NOT NULL,
+    "codeSnippet" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Problem_pkey" PRIMARY KEY ("id")
@@ -51,6 +52,12 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_name_key" ON "User"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Problem_slug_key" ON "Problem"("slug");
+
+-- AddForeignKey
+ALTER TABLE "Match" ADD CONSTRAINT "Match_winnerId_fkey" FOREIGN KEY ("winnerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Match" ADD CONSTRAINT "Match_problemId_fkey" FOREIGN KEY ("problemId") REFERENCES "Problem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
