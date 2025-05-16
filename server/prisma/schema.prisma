@@ -54,8 +54,9 @@ model MatchParticipant {
 
 model Problem {
   id          String   @id @default(uuid())
-  description String // The description will be a large string of markdown 
-  testCases   Json
+  slug        String   @unique // slug will be used to identify problem from the 'problems' folder
+  description String           // The description will be a large string of markdown 
+  codeSnippet String           
   createdAt   DateTime @default(now())
   Match       Match[]
 }
