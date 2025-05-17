@@ -1,5 +1,5 @@
 import React from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, BrowserRouter } from 'react-router-dom'
 import LandingPage from './pages/LandingPage'
 import Dashboard   from './pages/Dashboard'
 import Rivals      from './pages/BattlePage'      // Rivals content lives here
@@ -9,7 +9,8 @@ import { SlideTabsExample } from './components/Navbar'
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-[#101010] text-white">
+    <BrowserRouter>
+      <div className="min-h-screen bg-[#101010] text-white">
       <header className="border-b border-neutral-500">
         <SlideTabsExample />
       </header>
@@ -23,5 +24,6 @@ export default function App() {
         </Routes>
       </main>
     </div>
+    </BrowserRouter>
   )
 }
