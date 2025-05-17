@@ -1,36 +1,26 @@
-import { useState } from 'react'
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import LandingPage from "./pages/LandingPage";
+import Dashboard   from "./pages/Dashboard";
+import Rivals      from "./pages/BattlePage";   // your Rivals content
+import Resources   from "./pages/Resources";
+import { SlideTabsExample } from "./components/Navbar";
 
-function App() {
-  const [backendMessage, setBackendMessage] = useState('')
-  const backendConnect = () => {
-    fetch('/api/test', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-    .then((response) => response.json())
-    .then((data) => {
-      console.log(data)
-      setBackendMessage(data.message)
-    })
-  }
+export default function App() {
   return (
-    <>
-      <div className='flex flex-col items-center p-10 h-screen bg-gray-900'>
-        <h1 className='text-5xl text-amber-600 font-bold'>Ranked frontend</h1>
-        <button
-          className='bg-amber-600 text-white px-4 py-2 rounded mt-5'
-          onClick={backendConnect}
-        >
-          Test backend
-        </button>
-        <div className='text-white text-2xl mt-5'>
-          {backendMessage}
-        </div>
-      </div>
-    </>
-  )
+    <div className="min-h-screen bg-[#101010] text-white">
+      <header className="border-b border-neutral-500">
+        <SlideTabsExample />
+      </header>
+      <main>
+        <Routes>
+          <Route path="/"          element={<LandingPage />} />
+          <Route path="/dashboard" element={<Dashboard   />} />
+          <Route path="/resources" element={<Resources   />} />
+          <Route path="/rivals"    element={<Rivals      />} />
+          <Route path="*"          element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+    </div>
+  );
 }
-
-export default App
