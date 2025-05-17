@@ -1,13 +1,27 @@
+import React from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import LandingPage from './pages/LandingPage'
+import Dashboard   from './pages/Dashboard'
+import Rivals      from './pages/BattlePage'      // Rivals content lives here
+import Resources   from './pages/Resources'
+import { SlideTabsExample } from './components/Navbar'
 
-import React from 'react';
-import BattlePage from './pages/BattlePage';
 
-function App() {
+export default function App() {
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-      <BattlePage />
+    <div className="min-h-screen bg-[#101010] text-white">
+      <header className="border-b border-neutral-500">
+        <SlideTabsExample />
+      </header>
+      <main className="p-4">
+        <Routes>
+          <Route path="/"           element={<LandingPage />} />
+          <Route path="/dashboard"  element={<Dashboard   />} />
+          <Route path="/rivals"     element={<Rivals      />} />
+          <Route path="/resources"  element={<Resources   />} />
+          <Route path="*"           element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
     </div>
-  );
+  )
 }
-
-export default App;
