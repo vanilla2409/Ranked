@@ -33,17 +33,17 @@ app.post('/submit', async (req, res) => {
       message: "Problem does not exists"
     })
   
-  let fullCode = fs.readFileSync(`${process.env.PATH_TO_PROBLEMS}/${problem.slug}/boilerplateFullCode`, 'utf8').replace('##USER_CODE##', solutionCode);
+  let fullCode = fs.readFileSync(`${process.env.PATH_TO_PROBLEMS}/${problem.slug}/boilerplateFullCode.txt`, 'utf8').replace('##USER_CODE##', solutionCode);
   console.log('Full code:', fullCode);
   const testCases = loadTestCases(problem.slug);
-  
   const submissions = testCases.map(tc => ({
     source_code: fullCode,
-    language_id: 54, // C++
+    language_id: 71, 
     stdin: tc.input,
+    cpu_time_limit: 10,
     expected_output: tc.output,
-    cpu_time_limit: 2,
-    memory_limit: 128000,
+    memory_limit: null,
+    max_processes_and_or_threads: 10,
     callback_url: process.env.CALLBACK_URL,
   }));
   
@@ -69,7 +69,7 @@ app.post('/submit', async (req, res) => {
     })
 
   } catch (error) {
-    console.error('Error submitting code:', error);
+    console.error('Error submitting code:', error.code);
   }
 
   
