@@ -1,4 +1,3 @@
-
 import React from "react";
 import { SlideTabsExample } from "../components/Navbar.jsx";
 
