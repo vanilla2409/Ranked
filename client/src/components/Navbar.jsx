@@ -17,7 +17,7 @@ const SlideTabs = ({ navigate }) => {
   return (
     <ul
       onMouseLeave={() => setPosition((pv) => ({ ...pv, opacity: 0 }))}
-      className="relative mx-auto flex w-fit rounded-full border-2 border-black bg-white p-1"
+      className="relative mx-auto flex justify-center w-full max-w-[2000px] rounded-full border-2 border-black bg-white p-1"
     >
       <Tab setPosition={setPosition} onClick={() => navigate("/")}>
         Landing
@@ -26,7 +26,7 @@ const SlideTabs = ({ navigate }) => {
         Dashboard
       </Tab>
       <Tab setPosition={setPosition} onClick={() => navigate("/resources")}>
-        Resources
+        Learn
       </Tab>
       <Tab setPosition={setPosition} onClick={() => navigate("/rivals")}>
         Rivals
