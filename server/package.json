@@ -9,8 +9,8 @@
     "create-tunnel": "sudo sysctl -w net.core.rmem_max=7500000 && sudo sysctl -w net.core.wmem_max=7500000 && cloudflared tunnel --url http://localhost:3000",
     "docker-init": "docker compose -f docker-compose.pg.yaml up"
   },
-    "prisma": {
-  "seed": "node prisma/seed.js"
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "author": "TEAM: BloatWares",
   "license": "ISC",
@@ -20,6 +20,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "ioredis": "^5.6.1",
     "prisma": "^6.7.0"
   },
   "devDependencies": {
