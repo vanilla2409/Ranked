@@ -1,46 +1,24 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import { clerkExpressWithAuth, getAuth } from '@clerk/clerk-sdk-node';
+import express from 'express'
+import dotenv from 'dotenv'
+import cors from 'cors'
+import connectDB from './config/mongodb.js'
+import userRouter from './routes/userRouter.js'
 
-dotenv.config();
+dotenv.config()
+const app = express()
+const PORT = process.env.PORT || 3000
 
-const app = express();
-const port = 3000;
+app.use(cors())
+app.use(express.json())
 
-app.use(clerkExpressWithAuth());
+connectDB()
 
-app.get('/test', (req, res) => {
-  res.json({ message: 'Hello from the backend!' });
-});
+app.use('/api/users', userRouter)
 
-app.get('/protected', (req, res) => {
-  try {
-    const { userId } = getAuth(req);
-    if (!userId) {
-      return res.status(401).json({ error: 'No valid authentication token found.' });
-    }
-    res.json({ message: `Welcome! Your userId is ${userId}` });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error.' });
-  }
-});
+app.get('/', (req, res) => {
+  res.send('API is running')
+})
 
-app.get('/auth-status', (req, res) => {
-  try {
-    const { userId } = getAuth(req);
-    if (!userId) {
-      return res.status(401).json({ authenticated: false, error: 'No valid authentication token found.' });
-    }
-    res.json({ authenticated: true, userId });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error.' });
-  }
-});
-
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found.' });
-});
-
-app.listen(port, () => {
-  console.log(`Server listening on port: ${port}`);
-});
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`)
+})
