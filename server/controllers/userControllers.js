@@ -18,7 +18,7 @@ export const signup = async (req, res) => {
   const verificationToken = crypto.randomBytes(32).toString('hex');
   const user = new User({ username, email, hashedPassword, verificationToken });
   await user.save();
-  // Here you would send a verification email with the token
+  // Here we would send a verification email with the token
   res.status(201).json({ message: 'User created successfully. Please verify your email.' });
 };
 
@@ -60,7 +60,8 @@ export const forgotPassword = async (req, res) => {
   user.resetPasswordToken = resetToken;
   user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
   await user.save();
-  // Here you would send a reset email with the token
+
+  // Here we would send a reset email with the token
   res.json({ message: 'Password reset link sent to your email.' });
 };
 
