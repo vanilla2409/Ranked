@@ -12,6 +12,8 @@ import {
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { showSuccess, showError } from "./ui/sonner";
+import { useAuth } from "../lib/useAuth";
+import { useNavigate } from "react-router-dom";
 
 export function SignUpDialog() {
   const [form, setForm] = useState({
@@ -21,6 +23,8 @@ export function SignUpDialog() {
     confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -35,18 +39,12 @@ export function SignUpDialog() {
       setLoading(false);
       return;
     }
-    try {
-      // Replace with your actual API call
-      // const res = await fetch("/api/signup", { ... });
-      // const data = await res.json();
-      // if (!res.ok) throw new Error(data.message || "Signup failed");
-      showSuccess("Signup successful!");
-      setForm({ name: "", email: "", password: "", confirmPassword: "" });
-    } catch (err) {
-      showError(err.message);
-    } finally {
+    setTimeout(() => {
+      login();
+      showSuccess("Signed up successfully!");
       setLoading(false);
-    }
+      navigate("/dashboard", { replace: true });
+    }, 500);
   };
 
   return (

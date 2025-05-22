@@ -1,18 +1,27 @@
 import React, { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { SignInDialog } from "./SignInDialogue";
-import { SignUpDialog } from "./SignUpdialogue";
+import { Button } from "./ui/button";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "./ui/dialog";
+import { showSuccess } from "./ui/sonner";
+import { useAuth } from "../lib/useAuth";
+import { LogoutButton } from "./LogoutButton";
 
 export const SlideTabsExample = () => {
   const navigate = useNavigate();
   return (
     <div className="bg-[#101010] py-4 relative">
       <SlideTabs navigate={navigate} />
-      {/* Sign Up and Sign In buttons absolutely positioned over the navbar, right side, above the off-white surface */}
-      <div className="absolute flex gap-2 items-center" style={{ right: '190px', top: '50%', transform: 'translateY(-50%)' }}>
-        <SignUpDialog />
-        <SignInDialog />
+      <div className="absolute" style={{ right: '190px', top: '50%', transform: 'translateY(-50%)' }}>
+        <LogoutButton />
       </div>
     </div>
   );
@@ -27,9 +36,6 @@ const SlideTabs = ({ navigate }) => {
         onMouseLeave={() => setPosition((pv) => ({ ...pv, opacity: 0 }))}
         className="relative flex justify-center items-center flex-1 rounded-full border-2 border-black bg-white p-1"
       >
-        <Tab setPosition={setPosition} onClick={() => navigate("/")}>
-          Landing
-        </Tab>
         <Tab setPosition={setPosition} onClick={() => navigate("/dashboard")}>
           Dashboard
         </Tab>
@@ -39,7 +45,6 @@ const SlideTabs = ({ navigate }) => {
         <Tab setPosition={setPosition} onClick={() => navigate("/rivals")}>
           Rivals
         </Tab>
-
         <Cursor position={position} />
       </ul>
     </div>
