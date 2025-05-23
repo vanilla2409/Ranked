@@ -5,14 +5,22 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "nodemon server.js",
+    "create-tunnel": "sudo sysctl -w net.core.rmem_max=7500000 && sudo sysctl -w net.core.wmem_max=7500000 && cloudflared tunnel --url http://localhost:3000",
+    "docker-init": "docker compose -f docker-compose.pg.yaml up"
+  },
+    "prisma": {
+  "seed": "node prisma/seed.js"
   },
   "author": "TEAM: BloatWares",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^6.7.0",
+    "axios": "^1.9.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "prisma": "^6.7.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
