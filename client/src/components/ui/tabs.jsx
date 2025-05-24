@@ -26,6 +26,7 @@ export function TabList({ children, value, onChange }) {
         React.cloneElement(child, {
           selected: value === child.props.value,
           onClick: () => onChange(child.props.value),
+          selectedClassName: child.props.selectedClassName,
         })
       )}
     </div>
@@ -33,13 +34,13 @@ export function TabList({ children, value, onChange }) {
 }
 TabList.displayName = "TabList";
 
-export function Tab({ value, selected, onClick, children }) {
+export function Tab({ value, selected, onClick, children, selectedClassName }) {
   return (
     <button
       className={`px-4 py-1 rounded-t-md font-medium text-sm transition-colors border-b-2 ${
         selected
-          ? "border-purple-500 text-purple-300 bg-neutral-900"
-          : "border-transparent text-neutral-400 hover:text-purple-200"
+          ? selectedClassName || "border-[#A594F9] text-[#A594F9] bg-neutral-900"
+          : "border-transparent text-neutral-400 hover:text-[#A594F9]"
       }`}
       onClick={onClick}
       type="button"
