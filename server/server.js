@@ -11,7 +11,6 @@ import { loadTestCases } from './helpers/loadTestCases.js'
 import { checkPlayer } from './helpers/redisPlayersManagement.js'
 import { addToMatchmakingQueue, getMatchForPlayer, matchmakerWorker } from './helpers/redisMatchMaking.js'
 const app = express()
-const PORT = process.env.PORT || 3000
 
 app.use(cors())
 app.use(express.json())
@@ -20,15 +19,10 @@ app.use(express.json())
 app.use('/api/users', userRouter)
 const port = 3000
 
-app.use(express.json())
-
 app.get('/', (req, res) => {
   res.send('API is running')
 })
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`)
-});
 
 app.post('/submit', async (req, res) => {
   const {problemId , solutionCode} = req.body;
@@ -128,7 +122,7 @@ app.get('/find-match', async (req, res) => {
     })
   const player = await checkPlayer(userId);
   console.log('Player:', player);
-  const response = await addToMatchmakingQueue(player.id, player.__rating);
+  const response = await addToMatchmakingQueue(player.id, player.getRating());
   if(response) {
     return res.json({
       success: "true",

@@ -11,6 +11,18 @@ services:
       POSTGRES_DB: ranked
     volumes:
       - postgres_data:/var/lib/postgresql/data
+  
+  redis:
+    image: redis/redis-stack:latest
+    container_name: Ranked-Redis-Stack
+    restart: always
+    ports:
+      - "6379:6379"     # Redis
+      - "8001:8001"     # RedisInsight (UI)
+    volumes:
+      - redis_data:/data
+
 
 volumes:
   postgres_data:
+  redis_data:
