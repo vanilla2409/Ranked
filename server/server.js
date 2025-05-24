@@ -1,7 +1,6 @@
 import express from 'express'
 import dotenv from 'dotenv'
 import cors from 'cors'
-import connectDB from './config/mongodb.js'
 import userRouter from './routes/userRouter.js'
 
 dotenv.config()
@@ -17,7 +16,6 @@ const PORT = process.env.PORT || 3000
 app.use(cors())
 app.use(express.json())
 
-connectDB()
 
 app.use('/api/users', userRouter)
 const port = 3000
