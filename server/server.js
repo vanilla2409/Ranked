@@ -1,4 +1,10 @@
 import express from 'express'
+import dotenv from 'dotenv'
+import cors from 'cors'
+import connectDB from './config/mongodb.js'
+import userRouter from './routes/userRouter.js'
+
+dotenv.config()
 import prisma from './exports/prisma.js'
 import fs from 'fs'
 import axios from 'axios'
@@ -6,13 +12,25 @@ import { loadTestCases } from './helpers/loadTestCases.js'
 import { checkPlayer } from './helpers/redisPlayersManagement.js'
 import { addToMatchmakingQueue, getMatchForPlayer, matchmakerWorker } from './helpers/redisMatchMaking.js'
 const app = express()
+const PORT = process.env.PORT || 3000
+
+app.use(cors())
+app.use(express.json())
+
+connectDB()
+
+app.use('/api/users', userRouter)
 const port = 3000
 
 app.use(express.json())
 
-app.get('/test', (req, res) => {
-  res.json({ message: 'Hello from the backend!' })
+app.get('/', (req, res) => {
+  res.send('API is running')
 })
+
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`)
+});
 
 app.post('/submit', async (req, res) => {
   const {problemId , solutionCode} = req.body;
