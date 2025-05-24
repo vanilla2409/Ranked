@@ -9,6 +9,8 @@ import prisma from './exports/prisma.js'
 import fs from 'fs'
 import axios from 'axios'
 import { loadTestCases } from './helpers/loadTestCases.js'
+import { checkPlayer } from './helpers/redisPlayersManagement.js'
+import { addToMatchmakingQueue, getMatchForPlayer, matchmakerWorker } from './helpers/redisMatchMaking.js'
 const app = express()
 const PORT = process.env.PORT || 3000
 
@@ -117,6 +119,54 @@ app.put('/judge0/callback', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-app.listen(port, () => {
+
+app.get('/find-match', async (req, res) => {
+  const {userId} = req.body;
+
+  if(!userId)
+    return res.json({
+      success: "false",
+      message: "Unauthorized"
+    })
+  const player = await checkPlayer(userId);
+  console.log('Player:', player);
+  const response = await addToMatchmakingQueue(player.id, player.__rating);
+  if(response) {
+    return res.json({
+      success: "true",
+    });
+  } else {
+    return res.json({
+      success: "false",
+    });
+  }
+})
+
+app.get('/status-fm' , async (req, res) => {
+  const {userId} = req.body;
+
+  if(!userId)
+    return res.json({
+      success: "false",
+      message: "Unauthorized"
+    })
+  
+  const matchFound = await getMatchForPlayer(userId);
+  if(matchFound) {
+    return res.json({
+      success: "true",
+      matchDetails: matchFound
+    });
+  } else {
+    return res.json({
+      success: "false",
+      message: "No match found"
+    });
+  }
+})
+
+
+app.listen(port, async () => {
   console.log(`Server listening on port: ${port}`)
+  await matchmakerWorker();
 })

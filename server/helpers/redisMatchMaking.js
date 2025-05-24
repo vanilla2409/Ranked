@@ -1,0 +1,128 @@
+import redis from "../exports/redis.js";
+import prisma from "../exports/prisma.js";
+import { randomUUID } from "crypto";
+
+const MATCHMAKING_KEY = "matchmakingQueue";
+const MATCH_DATA_PREFIX = "match:";
+const PLAYER_MATCH_PREFIX = "playerMatch:";
+
+/**
+ * Adds a player to the matchmaking queue using a sorted set based on rating.
+ * Prevents duplicates by checking if the player is already present.
+ */
+export async function addToMatchmakingQueue(playerId, playerRating) {
+  // Check if the player is already in the queue
+  const existingScore = await redis.zscore(MATCHMAKING_KEY, playerId);
+
+  if (existingScore !== null) {
+    console.log("Player is already in the matchmaking queue");
+    return false;
+  }
+
+  // Add the player to the matchmaking queue with rating as score
+  try {
+    const result = await redis.zadd(MATCHMAKING_KEY, playerRating, playerId);
+    console.log(`Added player ${playerId} to queue with rating ${playerRating}`);
+    return result;
+
+  } catch (error) {
+    console.error("Error adding player to matchmaking queue:", error);
+    return false;
+  }
+}
+
+
+const RATING_DIFFERENCE = 100;
+
+async function findOpponent(playerId, playerRating) {
+  // Find players within rating ± threshold
+  const minScore = playerRating - RATING_DIFFERENCE;
+  const maxScore = playerRating + RATING_DIFFERENCE;
+
+  // Get potential opponents (excluding the player himself)
+  const candidates = await redis.zrangebyscore(MATCHMAKING_KEY, minScore, maxScore);
+
+  for (const opponentId of candidates) {
+    if (opponentId !== playerId) {
+      return opponentId;
+    }
+ }
+  return null;
+}
+
+async function createMatch(player1Id, player2Id) {
+  const matchId = randomUUID();
+
+  const matchData = {
+    matchId,
+    players: [player1Id, player2Id],
+    createdAt: Date.now(),
+    status: "pending",
+    problem: await prisma.problem.findFirst({
+        where: {
+          //add logic to select a problem based on criteria
+          // For now, we will just return the first problem
+          slug: 'sum-of-even', // Replace with actual logic to select a problem
+        },
+        select: {
+          id: true,
+          slug: true,
+          description: true,
+          codeSnippet: true,
+        },
+    }), // you can set problem here
+  };
+
+  // Save match object
+  await redis.set(`${MATCH_DATA_PREFIX}${matchId}`, JSON.stringify(matchData));
+
+  // Allow each player to lookup their match
+  await redis.set(`${PLAYER_MATCH_PREFIX}${player1Id}`, matchId);
+  await redis.set(`${PLAYER_MATCH_PREFIX}${player2Id}`, matchId);
+
+  console.log(`✅ Match Created: ${matchId} between ${player1Id} and ${player2Id}`);
+}
+
+// A worker that will be responsible for processing the matchmaking queue
+export async function matchmakerWorker() {
+  console.log("🎯 Matchmaking worker started...");
+
+  while (true) {
+    const TopPlayer = await redis.zrange(MATCHMAKING_KEY, 0, 0, "WITHSCORES");
+    if (TopPlayer.length === 0) {
+      // No players in the queue
+      console.log("No players in the matchmaking queue");
+      await new Promise((res) => setTimeout(res, 5000));
+      continue;
+    }
+    console.log("Top player in queue:", TopPlayer);
+
+    const opponentId = await findOpponent(TopPlayer[0], TopPlayer[1]);
+
+    if (opponentId) {
+      // Remove both players from the queue
+      await redis.zrem(MATCHMAKING_KEY, TopPlayer[0], opponentId);
+      // Create the match
+      await createMatch(TopPlayer[0], opponentId);
+
+    } else {
+      // No match found for this player yet; try again shortly
+      await new Promise((res) => setTimeout(res, 500));
+    }
+  }
+}
+
+export async function getMatchForPlayer(playerId) {
+  const matchId = await redis.get(`${PLAYER_MATCH_PREFIX}${playerId}`);
+
+  if (!matchId) {
+    return null;
+  }
+
+  const matchData = await redis.get(`${MATCH_DATA_PREFIX}${matchId}`);
+
+  if (!matchData) {
+    return null;
+  }
+  return JSON.parse(matchData);
+}

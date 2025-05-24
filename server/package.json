@@ -23,6 +23,8 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.15.0",
+    "glicko2": "^1.2.1",
+    "ioredis": "^5.6.1",
     "prisma": "^6.7.0"
   },
   "devDependencies": {
