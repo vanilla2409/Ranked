@@ -92,7 +92,7 @@ export async function matchmakerWorker() {
     if (TopPlayer.length === 0) {
       // No players in the queue
       console.log("No players in the matchmaking queue");
-      await new Promise((res) => setTimeout(res, 5000));
+      await new Promise((res) => setTimeout(res, 15000));
       continue;
     }
     console.log("Top player in queue:", TopPlayer);
@@ -125,4 +125,24 @@ export async function getMatchForPlayer(playerId) {
     return null;
   }
   return JSON.parse(matchData);
+}
+
+export async function getMatchDetails(matchId) {
+  const matchData = await redis.get(`${MATCH_DATA_PREFIX}${matchId}`);
+
+  if (!matchData) {
+    return null;
+  }
+
+  return JSON.parse(matchData);
+}
+
+export async function updateMatchDetails(matchId, updates) {
+  const matchData = await getMatchDetails(matchId);
+  if (!matchData) {
+    return null;
+  }
+  const updatedMatchData = { ...matchData, ...updates, status: "completed" };
+  await redis.set(`${MATCH_DATA_PREFIX}${matchId}`, JSON.stringify(updatedMatchData));
+  return;
 }
