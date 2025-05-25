@@ -1,24 +1,34 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { findUserByUsernameOrEmail, createNewUser, checkUserAuthentication } from '../helpers/db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 export const signup = async (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
-    return res.status(400).json({ message: 'All fields are required.' });
+    return res.status(400).json({ success: false, message: 'All fields are required.' });
   }
-  const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+  const existingUser = await findUserByUsernameOrEmail(username, email);
   if (existingUser) {
-    return res.status(409).json({ message: 'Username or email already exists.' });
+    return res.status(409).json({ success: false, message: 'Username or email already exists.' });
   }
   const hashedPassword = await bcrypt.hash(password, 10);
   const verificationToken = crypto.randomBytes(32).toString('hex');
-  const user = new User({ username, email, hashedPassword, verificationToken });
-  await user.save();
+  const user = await createNewUser(username, email, hashedPassword, verificationToken);
+  if (!user) {
+    return res.status(500).json({ success: false, message: 'Error creating user.' });
+  }
+
+  const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1d' });
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'Strict',
+  });
   // Here we would send a verification email with the token
-  res.status(201).json({ message: 'User created successfully. Please verify your email.' });
+  res.status(201).json({ success: true, message: 'User created successfully. Please login to continue' });
 };
 
 export const login = async (req, res) => {
@@ -26,19 +36,22 @@ export const login = async (req, res) => {
   if ((!username && !email) || !password) {
     return res.status(400).json({ message: 'Username/email and password are required.' });
   }
-  const user = await User.findOne({ $or: [{ username }, { email }] });
+
+  const hashPassword = bcrypt.hash(password, 10);
+
+  const user = await checkUserAuthentication(username, email, hashPassword);
+
   if (!user) {
-    return res.status(404).json({ message: 'User not found.' });
-  }
-  const isMatch = await bcrypt.compare(password, user.hashedPassword);
-  if (!isMatch) {
     return res.status(401).json({ message: 'Invalid credentials.' });
   }
-  if (!user.isVerified) {
-    return res.status(403).json({ message: 'Please verify your email before logging in.' });
-  }
-  const token = jwt.sign({ userId: user._id, username: user.username }, JWT_SECRET, { expiresIn: '1d' });
-  res.json({ token });
+
+  const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1d' });
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'Strict',
+  });
+  res.json({success: true, message: 'Login successful.'});
 };
 
 export const verifyEmail = async (req, res) => {

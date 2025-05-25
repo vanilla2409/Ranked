@@ -1,4 +1,4 @@
-import prisma from "../exports/prisma";
+import prisma from "../exports/prisma.js";
 
 export async function createNewUser(username, email, hashedPassword, verificationToken) {
   return await prisma.user.create({
@@ -7,6 +7,7 @@ export async function createNewUser(username, email, hashedPassword, verificatio
       email,
       passwordHash: hashedPassword,
       emailVerificationToken: verificationToken,
+      registrationType: 'EMAIL'
     },
   });
 }
@@ -44,4 +45,4 @@ export async function checkUserAuthentication(username, email, password) {
         return user;
       }
   return false;
-    }
+}
