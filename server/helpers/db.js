@@ -46,3 +46,37 @@ export async function checkUserAuthentication(username, email, password) {
       }
   return false;
 }
+
+export async function addNewMatch(winnerUsername, opponentUsername, matchId, problemId, date) {
+  const users = await prisma.user.findMany({
+    where: {
+      username: { in: [winnerUsername, opponentUsername] },
+    },
+    select: {
+      id: true,
+      username: true,
+    },
+  });
+
+  if (users.length !== 2) {
+    throw new Error("One or both usernames not found");
+  }
+
+  const userMap = Object.fromEntries(users.map(user => [user.username, user.id]));
+
+  return await prisma.match.create({
+    data: {
+      id: matchId,
+      winner: { connect: { id: userMap[winnerUsername] } },
+      problem: { connect: { id: problemId } },
+      playedAt: date,
+      participants: {
+        create: [
+          { user: { connect: { id: userMap[winnerUsername] } } },
+          { user: { connect: { id: userMap[opponentUsername] } } },
+        ],
+      },
+    },
+  });
+}
+

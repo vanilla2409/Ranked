@@ -1,5 +1,5 @@
 import redis from "../exports/redis.js";
-import { createPlayer, updateMatchResults } from "./glicko.js";
+import { createPlayer } from "./glicko.js";
 
 
 const PLAYERS_KEY = "players:";
@@ -23,6 +23,12 @@ export async function checkPlayer(playerId) {
     return newPlayer;
 }
 
+export async function updatePlayer(playerId, playerData) {
+    const playerKey = `${PLAYERS_KEY}${playerId}`;
+    const updatedPlayer = await redis.hset(playerKey, playerData);
+    console.log("Updated player in redis: ", updatedPlayer);
+    return updatedPlayer;
+}
 
 
 
