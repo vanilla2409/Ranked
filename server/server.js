@@ -9,7 +9,10 @@ import fs from 'fs'
 import axios from 'axios'
 import { loadTestCases } from './helpers/loadTestCases.js'
 import { checkPlayer } from './helpers/redisPlayersManagement.js'
-import { addToMatchmakingQueue, getMatchForPlayer, matchmakerWorker } from './helpers/redisMatchMaking.js'
+import { addToMatchmakingQueue, getMatchForPlayer, matchmakerWorker, getMatchDetails, updateMatchDetails } from './helpers/redisMatchMaking.js'
+import { setSubmissionForUser, getSubmissionForUser } from './helpers/redisSubmissionManagement.js'
+import { addNewMatch } from './helpers/db.js'
+import { updateMatchResults } from './helpers/glicko.js'
 const app = express()
 
 app.use(cors({
@@ -28,7 +31,7 @@ app.get('/', (req, res) => {
 
 
 app.post('/submit', async (req, res) => {
-  const {problemId , solutionCode} = req.body;
+  const {problemId , solutionCode, username} = req.body;
 
   if(!problemId || !solutionCode)
     return res.json({
@@ -77,10 +80,16 @@ app.post('/submit', async (req, res) => {
         }
       }
     );
-    console.log('Judge0 response:', response.data);
+
+    response.data.forEach(element => {
+        console.log(element.token);
+        setSubmissionForUser(element.token, {status: 'PENDING'});
+    })
+
     res.json({
       success: "true",
       message: "Code submitted successfully",
+      tokens: response.data.map(submission => submission.token)
     })
 
   } catch (error) {
@@ -96,9 +105,10 @@ app.put('/judge0/callback', async (req, res) => {
 
     console.log('Judge0 callback received:', body);
 
-    // Judge0 may use `token` instead of `submission_id`
-    const submissionId = body.token || body.submission_id;
-    const status = body.status;
+    const submissionId = body.token
+    const status = body.status.description;
+
+    await setSubmissionForUser(submissionId, {status: status});
 
     if (!submissionId || !status) {
       return res.status(400).json({ error: 'Missing token/submission_id or status' });
@@ -116,14 +126,14 @@ app.put('/judge0/callback', async (req, res) => {
 });
 
 app.get('/find-match', async (req, res) => {
-  const {userId} = req.body;
+  const {userId, username} = req.body;
 
-  if(!userId)
+  if(!userId || !username)
     return res.json({
       success: "false",
       message: "Unauthorized"
     })
-  const player = await checkPlayer(userId);
+  const player = await checkPlayer(username);
   console.log('Player:', player);
   const response = await addToMatchmakingQueue(player.id, player.getRating());
   if(response) {
@@ -138,15 +148,15 @@ app.get('/find-match', async (req, res) => {
 })
 
 app.get('/status-fm' , async (req, res) => {
-  const {userId} = req.body;
+  const {userId, username} = req.body;
 
-  if(!userId)
+  if(!userId || !username)
     return res.json({
       success: "false",
       message: "Unauthorized"
     })
   
-  const matchFound = await getMatchForPlayer(userId);
+  const matchFound = await getMatchForPlayer(username);
   if(matchFound) {
     return res.json({
       success: "true",
@@ -160,8 +170,74 @@ app.get('/status-fm' , async (req, res) => {
   }
 })
 
+app.get('/status-submission', async (req, res) => {
+  const {tokens} = req.body;
+
+  if(tokens.length === 0)
+    return res.json({
+      success: "false",
+      message: "Submission ID is required"
+    })
+
+  for(const token of tokens) {
+    const submission = await getSubmissionForUser(token);
+    if(!submission) {
+      return res.json({
+        success: "false",
+        message: "Invalid submission ID"
+      });
+    }
+
+    if(submission.status !== 'Accepted'){
+      res.json({
+        success: "false",
+        message: submission.status
+      });
+      return;
+    }
+  }
+  
+  const matchDetails = await getMatchDetails(req.body.matchId);
+
+  if(matchDetails.status === 'pending') { // if true, he is the first person to finish (hence winner)
+    
+    try {
+
+      const lostPlayerUsername = matchDetails.players[0] === req.body.username ? matchDetails.players[1] : matchDetails.players[0];
+      await addNewMatch(req.body.username, lostPlayerUsername, req.body.matchId, matchDetails.problem.id, matchDetails.playedAt);
+      
+      // get winner and opponent players details before this match
+      const winner = await checkPlayer(req.body.username);
+      const opponent = await checkPlayer(lostPlayerUsername);
+      // update match results [ranks and players] & get back the rating Difference
+      const ratingDifference = await updateMatchResults(winner, opponent, 1);
+
+      // update matchData for opponent
+      await updateMatchDetails(req.body.matchId, ratingDifference)
+
+      // send back response
+      res.json({
+        success: "true",
+        result: "You won the match",
+        ratingDifference: ratingDifference.winner
+      });
+    } catch (error) {
+      console.error('Error adding new match:', error);
+    }
+  }
+  else{
+    console.log(matchDetails),
+    res.json({
+      
+      success: "true",
+      message: "Better luck next time",
+      ratingDifference: matchDetails.loser
+    });
+  }
+})
+
 
 app.listen(port, async () => {
   console.log(`Server listening on port: ${port}`)
-  // await matchmakerWorker();
+  await matchmakerWorker();
 })
