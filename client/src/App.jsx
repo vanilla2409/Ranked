@@ -7,10 +7,11 @@ import Resources from "./pages/Resources";
 import BattlePage from "./pages/BattlePage";
 import { SlideTabsExample } from "./components/Navbar";
 import { Toaster } from "./components/ui/sonner";
-import { useAuth, AuthProvider } from "./lib/useAuth";
+import { useAuth } from "./lib/useAuth";
+import PrivateRoute from "./components/PrivateRoute";
 
-function AppContent() {
-  const { isAuthenticated } = useAuth();
+export default function App() {
+  const { user , loading } = useAuth(); // TODO Requires some changes
   const location = useLocation();
   const isLanding = location.pathname === "/";
   const isBattle = location.pathname === "/battle";
@@ -19,7 +20,7 @@ function AppContent() {
     <div className="min-h-screen bg-[#101010] text-white">
       <Toaster position="bottom-center" />
       {/* Show Navbar only if authenticated, not on landing or battle page */}
-      {isAuthenticated && !isLanding && !isBattle && (
+      {!loading && user && !isLanding && !isBattle && (
         <header className="fixed top-0 left-0 right-0 bg-[#101010] z-10">
           <SlideTabsExample />
         </header>
@@ -27,7 +28,7 @@ function AppContent() {
       <main className={isAuthenticated && !isLanding && !isBattle ? "pt-20" : ""}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/resources" element={<Resources />} />
           <Route path="/rivals" element={<Rivals />} />
           <Route path="/battle" element={<BattlePage />} />
@@ -35,14 +36,5 @@ function AppContent() {
         </Routes>
       </main>
     </div>
-  );
-}
-
-export default function App() {
-  // Use AuthProvider without value prop so it uses internal state
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
   );
 }

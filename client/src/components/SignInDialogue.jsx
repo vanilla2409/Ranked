@@ -12,13 +12,12 @@ import {
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { showSuccess, showError } from "./ui/sonner"
-import { useAuth } from "../lib/useAuth"
 import { useNavigate } from "react-router-dom"
+import axios from "../lib/axios"
 
 export function SignInDialog() {
   const [form, setForm] = useState({ email: "", password: "" })
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
   const navigate = useNavigate()
 
   const handleChange = (e) => {
@@ -28,13 +27,26 @@ export function SignInDialog() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    // Accept any credentials
-    setTimeout(() => {
-      login()
-      showSuccess("Signed in successfully!")
-      setLoading(false)
-      navigate("/dashboard", { replace: true })
-    }, 500)
+    try {
+      const response = await axios.post(`/users/login`, {
+        email: form.email,
+        password: form.password,
+      })
+      if(response.data.success) {
+        showSuccess("Logged in successfully")
+        setForm({ email: "", password: "" })
+        setTimeout(() => {
+          setLoading(false)
+          navigate("/dashboard")
+        }, 1000)
+      }
+      else {
+        showError(response.data.message || "Login failed")
+        setLoading(false)
+      }
+    } catch (error) {
+      showError("An error occurred while logging in. Please try again.")
+    }
   }
 
   return (

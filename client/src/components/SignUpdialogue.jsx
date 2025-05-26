@@ -14,16 +14,16 @@ import { Input } from "./ui/input";
 import { showSuccess, showError } from "./ui/sonner";
 import { useAuth } from "../lib/useAuth";
 import { useNavigate } from "react-router-dom";
+import axios from "../lib/axios";
 
 export function SignUpDialog() {
   const [form, setForm] = useState({
-    name: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -33,18 +33,35 @@ export function SignUpDialog() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // Example validation
+
     if (form.password !== form.confirmPassword) {
       showError("Passwords do not match");
       setLoading(false);
       return;
     }
-    setTimeout(() => {
-      login();
-      showSuccess("Signed up successfully!");
+    console.log("Form data:", form);
+
+    try {
+      const response = await axios.post(`/users/signup`,{
+        username: form.username,
+        email: form.email,
+        password: form.password,
+      })
+  
+      if(!response.data.success) {
+        showError(response.data.message || "Signup failed");
+        setLoading(false);
+        return;
+      }
       setLoading(false);
+      showSuccess("Signed up successfully!");
       navigate("/dashboard", { replace: true });
-    }, 500);
+      setForm({ username: "", email: "", password: "", confirmPassword: "" });
+    } catch (error) {
+      console.error("Signup error:");
+      setLoading(false);
+      showError(error.response?.data?.message || "An error occurred during signup");
+    }
   };
 
   return (
@@ -63,7 +80,7 @@ export function SignUpDialog() {
           <DialogDescription>Enter your details to sign up</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          <Input name="name" type="text" placeholder="Name" value={form.name} onChange={handleChange} required />
+          <Input name="username" type="text" placeholder="Name" value={form.username} onChange={handleChange} required />
           <Input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} required />
           <Input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required />
           <Input name="confirmPassword" type="password" placeholder="Confirm Password" value={form.confirmPassword} onChange={handleChange} required />
