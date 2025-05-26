@@ -87,3 +87,12 @@ export const resetPassword = async (req, res) => {
   await user.save();
   res.json({ message: 'Password reset successful.' });
 };
+
+export const logout = (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'Strict',
+  });
+  res.json({ success: true, message: 'Logged out successfully.' });
+}

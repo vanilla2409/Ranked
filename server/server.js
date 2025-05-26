@@ -13,12 +13,14 @@ import { addToMatchmakingQueue, getMatchForPlayer, matchmakerWorker, getMatchDet
 import { setSubmissionForUser, getSubmissionForUser } from './helpers/redisSubmissionManagement.js'
 import { addNewMatch } from './helpers/db.js'
 import { updateMatchResults } from './helpers/glicko.js'
+import cookieParser from 'cookie-parser'
 const app = express()
 
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
 }))
+app.use(cookieParser())
 app.use(express.json())
 
 
@@ -241,3 +243,4 @@ app.listen(port, async () => {
   console.log(`Server listening on port: ${port}`)
   await matchmakerWorker();
 })
+
