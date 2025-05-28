@@ -133,7 +133,7 @@ export default function BattlePage() {
               <CardContent>
                 <div className="prose prose-invert max-w-none text-white">
                   <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                    <span className="text-[#A594F9]">2942.</span> {mockProblem.title}
+                    <span className="text-fuchsia-700">2942.</span> {mockProblem.title}
                   </h2>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs px-2 py-0.5 rounded bg-[#A594F9]/20 text-[#A594F9]">{mockProblem.difficulty}</span>
