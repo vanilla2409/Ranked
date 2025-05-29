@@ -1,22 +1,47 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { twMerge } from "tailwind-merge";
 import { useNavigate } from "react-router-dom";
+import axios from "../lib/axios";
 
 export const RevealBento = () => {
   const navigate = useNavigate();
+  const [stats, setStats] = useState({ matchesPlayed: 0, matchesWon: 0 });
+
+  useEffect(() => {
+    // Replace '/user/stats' with your actual backend endpoint
+    axios.get("/user/stats")
+      .then(res => {
+        setStats({
+          matchesPlayed: res.data.matchesPlayed || 0,
+          matchesWon: res.data.matchesWon || 0,
+        });
+      })
+      .catch(() => {
+        setStats({ matchesPlayed: 0, matchesWon: 0 });
+      });
+  }, []);
+
+  const matchesLost = Math.max(stats.matchesPlayed - stats.matchesWon, 0);
+  const winRate = stats.matchesPlayed > 0
+    ? ((stats.matchesWon / stats.matchesPlayed) * 100).toFixed(1)
+    : "0.0";
+
   return (
     <div className="min-h-screen px-4 py-12 text-zinc-50">
       <motion.div
         initial="initial"
         animate="animate"
-        transition={{
-          staggerChildren: 0.05,
-        }}
+        transition={{ staggerChildren: 0.05 }}
         className="mx-auto grid max-w-4xl grid-flow-dense grid-cols-12 gap-4"
       >
         <HeaderBlock />
-        <SocialsBlock />
+        <SocialsBlock
+          matchesPlayed={stats.matchesPlayed}
+          matchesWon={stats.matchesWon}
+          matchesLost={matchesLost}
+          winRate={winRate}
+        />
       </motion.div>
       <div className="flex justify-center mt-8">
         <button
@@ -33,81 +58,90 @@ export const RevealBento = () => {
 const Block = ({ className, ...rest }) => {
   return (
     <motion.div
-      variants={{
-        initial: {
-          scale: 0.5,
-          y: 50,
-          opacity: 0,
-        },
-        animate: {
-          scale: 1,
-          y: 0,
-          opacity: 1,
-        },
-      }}
-      transition={{
-        type: "spring",
-        mass: 3,
-        stiffness: 400,
-        damping: 50,
-      }}
-      className={twMerge(
-        "col-span-4 rounded-lg border border-zinc-700 bg-zinc-800 p-6",
-        className
-      )}
+      whileHover={{ scale: 1.03 }}
+      className={`rounded-lg bg-[#181022] border border-fuchsia-700 text-white shadow-md p-6 ${className}`}
       {...rest}
     />
   );
 };
 
-const HeaderBlock = () => (
-  <Block className="col-span-12 row-span-2 md:col-span-6">
-    <h1 className="mb-12 text-4xl font-medium leading-tight">
-      Hi, I'm Tom.{" "}
-      <span className="text-zinc-400">
-        I build cool websites like this one.
-      </span>
-    </h1>
-    <a
-      href="#"
-      className="flex items-center gap-1 text-red-300 hover:underline"
-    >
-    </a>
-  </Block>
-);
+const HeaderBlock = () => {
+  const [user, setUser] = React.useState({ username: '', elo: null });
 
-const SocialsBlock = () => (
+  React.useEffect(() => {
+    // Fetch the logged-in user's name and ELO from backend (replace endpoint as needed)
+    axios.get("/user/profile").then(res => {
+      setUser({
+        username: res.data.username || "User",
+        elo: res.data.elo || null,
+      });
+    }).catch(() => {
+      setUser({ username: "User", elo: null });
+    });
+  }, []);
+
+  return (
+    <Block className="col-span-12 row-span-2 md:col-span-6 flex flex-col items-center justify-center">
+      <h1 className="mb-2 text-4xl font-bold text-center">
+        {user.username}
+      </h1>
+      <div className="text-lg text-zinc-400 font-medium text-center mb-1">
+        Rank: -
+      </div>
+      <div className="text-base text-zinc-400 font-medium text-center">
+        ELO: {user.elo !== null ? user.elo : "-"}
+      </div>
+    </Block>
+  );
+};
+
+const SocialsBlock = ({ matchesPlayed, matchesWon, matchesLost, winRate }) => (
   <>
     <Block
-      whileHover={{
-        rotate: "2.5deg",
-        scale: 1.1,
-      }}
-      className="col-span-6 bg-zinc-800 md:col-span-3"
-    />
+      whileHover={{ rotate: "2.5deg", scale: 1.1 }}
+      className="col-span-6 bg-zinc-800 md:col-span-3 flex flex-col items-start justify-center text-sm font-medium relative"
+    >
+      <span className="mt-[-16px] mb-2">Matches</span>
+      <span className="mt-2 text-2xl font-bold">{matchesPlayed}</span>
+    </Block>
     <Block
-      whileHover={{
-        rotate: "-2.5deg",
-        scale: 1.1,
-      }}
-      className="col-span-6 bg-zinc-800 md:col-span-3"
-    />
+      whileHover={{ rotate: "-2.5deg", scale: 1.1 }}
+      className="col-span-6 bg-zinc-800 md:col-span-3 flex flex-col items-start justify-center text-sm font-medium relative"
+    >
+      <span className="mt-[-16px] mb-2">Won</span>
+      <span className="mt-2 text-2xl font-bold">{matchesWon}</span>
+    </Block>
     <Block
-      whileHover={{
-        rotate: "-2.5deg",
-        scale: 1.1,
-      }}
-      className="col-span-6 bg-zinc-800 md:col-span-3"
-    />
+      whileHover={{ rotate: "-2.5deg", scale: 1.1 }}
+      className="col-span-6 bg-zinc-800 md:col-span-3 flex flex-col items-start justify-center text-sm font-medium relative"
+    >
+      <span className="mt-[-16px] mb-2">Lost</span>
+      <span className="mt-2 text-2xl font-bold">{matchesLost}</span>
+    </Block>
     <Block
-      whileHover={{
-        rotate: "2.5deg",
-        scale: 1.1,
-      }}
-      className="col-span-6 bg-zinc-800 md:col-span-3"
-    />
+      whileHover={{ rotate: "2.5deg", scale: 1.1 }}
+      className="col-span-6 bg-zinc-800 md:col-span-3 flex flex-col items-start justify-center text-sm font-medium relative"
+    >
+      <span className="mt-[-16px] mb-2">Win Rate</span>
+      <span className="mt-2 text-2xl font-bold">{winRate}%</span>
+    </Block>
   </>
 );
+
+// Leaderboard logic (for Leaderboard.jsx):
+// Fetch and sort leaderboard data by ELO descending
+// Example usage in Leaderboard.jsx:
+//
+// const [players, setPlayers] = useState([]);
+// useEffect(() => {
+//   axios.get('/leaderboard').then(res => {
+//     // Sort by ELO descending
+//     const sorted = (res.data.players || []).sort((a, b) => b.elo - a.elo);
+//     setPlayers(sorted);
+//   });
+// }, []);
+//
+// ...render sorted players...
 
 
 

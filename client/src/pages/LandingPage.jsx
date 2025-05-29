@@ -313,9 +313,10 @@ export default function LandingPage() {
           </div>
 
           <div className="max-w-2xl mx-auto">
-            <Card className="bg-gray-900/50 border-gray-800 overflow-hidden">
+            {/* --- UNIFY LEADERBOARD CARD COLORS --- */}
+            <Card className="bg-[#181022] border-fuchsia-700 overflow-hidden">
               <CardContent className="p-0">
-                <div className="bg-gradient-to-r from-fuchsia-600/10 to-purple-600/10 border-b border-gray-800 p-4">
+                <div className="bg-gradient-to-r from-fuchsia-600/10 to-purple-600/10 border-b border-fuchsia-700 p-4">
                   <div className="flex items-center justify-between text-sm font-medium text-gray-300">
                     <span>Rank</span>
                     <span>Player</span>
@@ -323,7 +324,7 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div className="divide-y divide-gray-800">
+                <div className="divide-y divide-fuchsia-900/30">
                   {[
                     { rank: 1, username: "CodeMaster_X", rating: 2847, isTop: true },
                     { rank: 2, username: "AlgoNinja", rating: 2756, isTop: true },
@@ -333,20 +334,20 @@ export default function LandingPage() {
                   ].map((player) => (
                     <div
                       key={player.rank}
-                      className={`flex items-center justify-between p-4 hover:bg-gray-800/50 transition-colors ${
-                        player.isTop ? "bg-gradient-to-r from-fuchsia-600/5 to-purple-600/5" : ""
+                      className={`flex items-center justify-between p-4 transition-colors ${
+                        player.isTop ? "bg-gradient-to-r from-fuchsia-600/5 to-purple-600/5" : "hover:bg-fuchsia-900/10"
                       }`}
                     >
                       <div className="flex items-center space-x-3">
                         <div
                           className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                             player.rank === 1
-                              ? "bg-gradient-to-r from-yellow-500 to-yellow-600 text-black"
+                              ? "bg-gradient-to-r from-yellow-400 to-yellow-600 text-black"
                               : player.rank === 2
                                 ? "bg-gradient-to-r from-gray-400 to-gray-500 text-black"
                                 : player.rank === 3
                                   ? "bg-gradient-to-r from-amber-600 to-amber-700 text-white"
-                                  : "bg-gray-700 text-gray-300"
+                                  : "bg-[#232136] text-gray-300 border border-fuchsia-900/30"
                           }`}
                         >
                           {player.rank}
@@ -371,7 +372,7 @@ export default function LandingPage() {
                           <Crown
                             className={`w-4 h-4 ${
                               player.rank === 1
-                                ? "text-yellow-500"
+                                ? "text-yellow-400"
                                 : player.rank === 2
                                   ? "text-gray-400"
                                   : "text-amber-600"
@@ -383,7 +384,7 @@ export default function LandingPage() {
                   ))}
                 </div>
 
-                <div className="bg-gray-800/30 p-4 text-center">
+                <div className="bg-[#232136] border-t border-fuchsia-900/30 p-4 text-center">
                   <Button variant="ghost" className="text-fuchsia-400 hover:text-fuchsia-300 hover:bg-fuchsia-500/10">
                     View Full Leaderboard
                     <TrendingUp className="w-4 h-4 ml-2" />
@@ -462,7 +463,7 @@ export default function LandingPage() {
               <DialogClose asChild>
                 <Button
                   variant="ghost"
-                  className="text-white hover:text-[#101010] hover:bg-white"
+                  className="text-white hover:text-fuchsia-600 hover:bg-fuchsia-900/10 transition-colors"
                 >
                   Cancel
                 </Button>
@@ -474,12 +475,6 @@ export default function LandingPage() {
       {/* Signup Dialog */}
       <Dialog open={signupOpen} onOpenChange={setSignupOpen}>
         <DialogTrigger asChild>
-          {/* Remove this button from the bottom, keep only in header */}
-          {/* <Button
-            className="bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-700 hover:to-purple-700 text-white border-0 px-6 py-2 font-semibold"
-          >
-            Sign Up
-          </Button> */}
         </DialogTrigger>
         <DialogContent className="bg-[#181022] border-fuchsia-700">
           <DialogHeader>
@@ -538,7 +533,7 @@ export default function LandingPage() {
               <DialogClose asChild>
                 <Button
                   variant="ghost"
-                  className="text-white hover:text-[#101010] hover:bg-white"
+                  className="text-white hover:text-fuchsia-600 hover:bg-fuchsia-900/10 transition-colors"
                 >
                   Cancel
                 </Button>

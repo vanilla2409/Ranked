@@ -94,7 +94,7 @@ export default function BattlePage() {
   return (
     <div className="min-h-screen bg-[#101010] text-white flex flex-col">
       {/* Top bar: Timer & Players */}
-      <div className="flex justify-between items-center px-6 py-4 border-b border-neutral-800 bg-[#18181b]">
+      <div className="flex justify-between items-center px-6 py-4 border-b border-fuchsia-700 bg-[#181022]">
         <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="flex items-center gap-4">
           <span className="text-lg font-mono bg-black/60 px-3 py-1 rounded">⏰ {formatTime(timer)}</span>
         </motion.div>
@@ -113,7 +113,7 @@ export default function BattlePage() {
         {/* Left: Problem Card */}
         <ResizablePanel defaultSize={40} minSize={20} maxSize={70} className="md:w-1/2 w-full">
           <motion.div initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.3 }} className="h-full">
-            <Card className="h-full bg-neutral-900/80">
+            <Card className="h-full bg-[#181022] border-fuchsia-700">
               <CardHeader>
                 <CardTitle>{mockProblem.title}</CardTitle>
                 <div className="flex gap-2 mt-1">
@@ -191,7 +191,7 @@ export default function BattlePage() {
         <ResizablePanel defaultSize={60} minSize={20} maxSize={90} className="md:w-1/2 w-full">
           <div className="flex flex-col h-full">
             <div className="flex items-center gap-2 mb-2 justify-center w-full">
-              <span className="bg-[#18181b] border border-neutral-800 rounded px-4 py-2 text-base text-neutral-300 min-w-[120px] font-mono text-center">Python</span>
+              <span className="bg-[#232136] border border-fuchsia-700 rounded px-4 py-2 text-base text-white min-w-[120px] font-mono text-center">Python</span>
               {verdict && (
                 <span className={`ml-2 px-2 py-1 rounded text-xs font-semibold ${verdict === "Accepted" ? "bg-green-700 text-green-200" : "bg-red-700 text-red-200"}`}>
                   {verdict === "Accepted" ? "Accepted" : "Rejected"}

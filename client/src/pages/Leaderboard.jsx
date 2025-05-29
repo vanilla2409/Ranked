@@ -28,9 +28,9 @@ const Leaderboard = () => {
         </div>
 
         <div className="max-w-2xl mx-auto">
-          <Card className="bg-gray-900/50 border-gray-800 overflow-hidden">
+          <Card className="bg-[#181022] border-fuchsia-700 overflow-hidden">
             <CardContent className="p-0">
-              <div className="bg-gradient-to-r from-fuchsia-600/10 to-purple-600/10 border-b border-gray-800 p-4">
+              <div className="bg-gradient-to-r from-fuchsia-600/10 to-purple-600/10 border-b border-fuchsia-700 p-4">
                 <div className="flex items-center justify-between text-sm font-medium text-gray-300">
                   <span>Rank</span>
                   <span>Player</span>
@@ -98,7 +98,7 @@ const Leaderboard = () => {
                 ))}
               </div>
 
-              <div className="bg-gray-800/30 p-4 text-center">
+              <div className="bg-[#232136] border-t border-fuchsia-900/30 p-4 text-center">
                 <Button variant="ghost" className="text-fuchsia-400 hover:text-fuchsia-300 hover:bg-fuchsia-500/10">
                   View Full Leaderboard
                   <TrendingUp className="w-4 h-4 ml-2" />
