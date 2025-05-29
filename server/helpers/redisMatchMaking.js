@@ -32,7 +32,7 @@ export async function addToMatchmakingQueue(playerId, playerRating) {
 }
 
 
-const RATING_DIFFERENCE = 100;
+const RATING_DIFFERENCE = 300;
 
 async function findOpponent(playerId, playerRating) {
   // Find players within rating ± threshold
@@ -41,7 +41,7 @@ async function findOpponent(playerId, playerRating) {
 
   // Get potential opponents (excluding the player himself)
   const candidates = await redis.zrangebyscore(MATCHMAKING_KEY, minScore, maxScore);
-
+  console.log(`Potential opponents for player ${playerId}:`, candidates);
   for (const opponentId of candidates) {
     if (opponentId !== playerId) {
       return opponentId;
@@ -97,7 +97,7 @@ export async function matchmakerWorker() {
     }
     console.log("Top player in queue:", TopPlayer);
 
-    const opponentId = await findOpponent(TopPlayer[0], TopPlayer[1]);
+    const opponentId = await findOpponent(TopPlayer[0], Number(TopPlayer[1]));
 
     if (opponentId) {
       // Remove both players from the queue

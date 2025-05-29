@@ -2,35 +2,46 @@ import glicko from "../exports/glicko.js";
 import { updateLeaderboard } from "./leaderboard.js";
 import { updatePlayer } from "./redisPlayersManagement.js";
 
-export function createPlayer() {
+// taken from glicko2. Will use it to calculate the rating, rd, vol
+export const scalingFactor = 173.7178;
+
+export function createPlayer(rating, rd, vol){
+  if (rating && rd && vol) {
+    const player = glicko.makePlayer(rating, rd, vol);
+    glicko.removePlayers(); 
+    return player;
+  }
   const player = glicko.makePlayer();
   glicko.removePlayers();
   return player;
 }
 
 export async function updateMatchResults(player1, player2, result){
-    const updated_p1 = glicko.makePlayer(player1.rating, player1.rd, player1.vol);
-    console.log("Updated player 1: ", updated_p1)
-    const updated_p2 = glicko.makePlayer(player2.rating, player2.rd, player2.vol);
-    console.log("Updated player 2: ", updated_p2)
-    const p1_prev_rating = updated_p1.getRating();
-    const p2_prev_rating = updated_p2.getRating();
+
+    const p1_prev_rating = player1.getRating();
+    const p2_prev_rating = player2.getRating();
+
+    const hydratedPlayer1 = glicko.makePlayer(p1_prev_rating, player1.getRd(), player1.getVol());
+    hydratedPlayer1.id = player1.id; 
+
+    const hydratedPlayer2 = glicko.makePlayer(p2_prev_rating, player2.getRd(), player2.getVol());
+    hydratedPlayer2.id = player2.id;
 
     const matches = [];
-    matches.push([updated_p1, updated_p2, result]);
+    matches.push([hydratedPlayer1, hydratedPlayer2, result]);
     glicko.updateRatings(matches);
 
     // update ratings in leaderboard 
-    await updateLeaderboard(player1.id, updated_p1.getRating());
-    await updateLeaderboard(player2.id, updated_p2.getRating());
+    await updateLeaderboard(player1.id, hydratedPlayer1.getRating());
+    await updateLeaderboard(player2.id, hydratedPlayer2.getRating());
 
     // update ratings in players: set [redis]
-    await updatePlayer(player1.id, updated_p1);
-    await updatePlayer(player2.id, updated_p2);
+    await updatePlayer(player1.id, hydratedPlayer1);
+    await updatePlayer(player2.id, hydratedPlayer2);
 
     const ratingDifference = {
-        winner: updated_p1.getRating() - p1_prev_rating,
-        loser: updated_p2.getRating() - p2_prev_rating,
+        winner: hydratedPlayer1.getRating() - p1_prev_rating,
+        loser: hydratedPlayer2.getRating() - p2_prev_rating,
     };
 
     glicko.removePlayers(); // just to clear the players from glicko's memory (as we are using redis, we dont need extra mem to store players)
