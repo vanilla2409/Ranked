@@ -38,8 +38,6 @@ export default function LandingPage() {
     }
   }, [user, navigate])
 
-  if (user) return null
-
   // Handlers for login/signup
   const handleLoginChange = (e) => setLoginForm({ ...loginForm, [e.target.name]: e.target.value })
   const handleSignupChange = (e) => setSignupForm({ ...signupForm, [e.target.name]: e.target.value })
