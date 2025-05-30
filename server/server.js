@@ -137,6 +137,7 @@ app.get('/find-match', async (req, res) => {
     })
   const player = await checkPlayer(username);
   console.log('Player:', player);
+  console.log('Player rating:', player.getRating());
   const response = await addToMatchmakingQueue(player.id, player.getRating());
   if(response) {
     return res.json({
