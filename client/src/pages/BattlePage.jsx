@@ -1,70 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import MonacoEditor from "@monaco-editor/react";
-import { Button } from "../components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "../components/ui/card";
-import { Tooltip } from "../components/ui/tooltip";
+import { Button } from "../components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "../components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "../components/ui/resizable";
 import ReactMarkdown from "react-markdown";
-import mockData from "../../problems/mockData.json";
+import axios from "../lib/axios";
+import FindingMatchPage from "./FindingMatch";
 
 
-function parseExamplesAndConstraints(description) {
-  
-  const exampleRegex = /\*\*Input\*\*\s*```([\s\S]*?)```\s*\*\*Output\*\*\s*```([\s\S]*?)```/g;
-  const examples = [];
-  let match;
-  while ((match = exampleRegex.exec(description))) {
-    examples.push({
-      input: match[1].trim(),
-      output: match[2].trim(),
-    });
-  }
-  // Extract constraints section
-  const constraintsRegex = /#### Constraints([\s\S]*?)(?=####|$)/;
-  const constraintsMatch = description.match(constraintsRegex);
-  let constraints = [];
-  if (constraintsMatch) {
-    constraints = constraintsMatch[1]
-      .split(/\n|\r/)
-      .map(line => line.replace(/^-\s*/, '').trim())
-      .filter(line => line.length > 0);
-  }
-  return { examples, constraints };
-}
 
-const desc = mockData.matchDetails.problem.description;
-const { examples, constraints } = parseExamplesAndConstraints(desc);
-
-const mockProblem = {
-  title: mockData.matchDetails.problem.slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-  difficulty: "Easy", // No difficulty in mockData, set default or parse if added
-  tags: [], // No tags in mockData, set empty or parse if added
-  description: desc,
-  examples,
-  constraints,
-};
-
-const mockPlayers = mockData.matchDetails.players.map(username => ({ username, elo: 1400 }));
-
-const languages = [
-  // { label: "JavaScript", value: "javascript" },
-  { label: "Python", value: "python" }
-  // { label: "C++", value: "cpp" },
-];
-
-export default function BattlePage() {
+function BattlePage({ matchDetails }) {
   const navigate = useNavigate();
-  const [lang, setLang] = useState(languages[0].value);
-  const [code, setCode] = useState("// Write your code here...");
+  const [code, setCode] = useState(matchDetails.problem.codeSnippet);
   const [output, setOutput] = useState("");
-  const [verdict, setVerdict] = useState(null); 
+  const [verdict, setVerdict] = useState("Accepted"); 
   const [timer, setTimer] = useState(0); 
   const [timerActive, setTimerActive] = useState(true);
-  const [exitDialogOpen, setExitDialogOpen] = useState(false);
   const [resignDialogOpen, setResignDialogOpen] = useState(false);
+  const editorRef = useRef(null);
+
+  const handleEditorDidMount = (editor) => {
+    editorRef.current = editor;
+  }
+
 
   // Timer logic
   React.useEffect(() => {
@@ -74,6 +35,7 @@ export default function BattlePage() {
   }, [timerActive]);
 
   const handleSubmit = () => {
+    console.log(editorRef.current.getValue());
     setOutput("Test cases passed!\nAll outputs correct.");
     setVerdict("Accepted");
     setTimerActive(false); 
@@ -82,10 +44,8 @@ export default function BattlePage() {
     setOutput("You resigned. Better luck next time!");
     setVerdict("Wrong Answer");
     setTimerActive(false); 
-    setResignDialogOpen(false);
   };
   const handleExit = () => {
-    setExitDialogOpen(false);
     navigate("/dashboard");
   };
 
@@ -100,9 +60,9 @@ export default function BattlePage() {
         </motion.div>
         <div className="flex-1 flex justify-center">
           <div className="flex items-center gap-8">
-            {mockPlayers.map((p, i) => (
-              <motion.div key={p.username} initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: i * 0.1 }} className="flex flex-col items-center">
-                <span className="font-bold text-base">{p.username}</span>
+            {matchDetails.players.map((p, i) => (
+              <motion.div key={i} initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: i * 0.1 }} className="flex flex-col items-center">
+                <span className="font-bold text-2xl">{p}</span>
               </motion.div>
             ))}
           </div>
@@ -115,10 +75,10 @@ export default function BattlePage() {
           <motion.div initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.3 }} className="h-full">
             <Card className="h-full bg-[#181022] border-fuchsia-700">
               <CardHeader>
-                <CardTitle>{mockProblem.title}</CardTitle>
+                <CardTitle>{matchDetails.problem.slug}</CardTitle>
                 <div className="flex gap-2 mt-1">
-                  <span className="text-xs px-2 py-0.5 rounded bg-purple-700/30 text-purple-300">{mockProblem.difficulty}</span>
-                  {mockProblem.tags.map((tag) => (
+                  <span className="text-xs px-2 py-0.5 rounded bg-purple-700/30 text-purple-300">{matchDetails.difficulty || 'Easy'}</span>
+                  {matchDetails.tags?.map((tag) => (
                     <span key={tag} className="text-xs px-2 py-0.5 rounded bg-neutral-800 text-neutral-300">{tag}</span>
                   ))}
                 </div>
@@ -128,59 +88,12 @@ export default function BattlePage() {
                   <h2 className="text-2xl font-bold mb-4 flex items-center gap-2 text-fuchsia-700">
                     Problem Statement
                   </h2>
-                  {/* Only show the main description, not the markdown examples/constraints */}
-                  <ReactMarkdown
-                    components={{
-                      p: ({node, ...props}) => <p className="mb-2 text-base leading-relaxed" {...props} />,
-                      ul: ({node, ...props}) => <ul className="list-disc ml-5 text-sm" {...props} />,
-                      li: ({node, ...props}) => <li className="mb-1" {...props} />,
-                      code: ({node, ...props}) => <code className="bg-neutral-800 px-1 rounded text-[#A594F9]" {...props} />,
-                      strong: ({node, ...props}) => <strong className="font-semibold" {...props} />,
-                    }}
-                  >
-                    {mockProblem.description.replace(/#### Input Format[\s\S]*$/m, '').trim()}
-                  </ReactMarkdown>
-                  {/* Input Format */}
-                  {mockProblem.description.includes('#### Input Format') && (
-                    <div className="mb-2 mt-4">
-                      <div className="font-semibold mb-1 text-white">Input Format:</div>
-                      <ReactMarkdown>{
-                        (mockProblem.description.match(/#### Input Format([\s\S]*?)(?=####|$)/) || [])[1]?.trim() || ''
-                      }</ReactMarkdown>
-                    </div>
-                  )}
-                  {/* Output Format */}
-                  {mockProblem.description.includes('#### Output Format') && (
-                    <div className="mb-2 mt-4">
-                      <div className="font-semibold mb-1 text-white">Output Format:</div>
-                      <ReactMarkdown>{
-                        (mockProblem.description.match(/#### Output Format([\s\S]*?)(?=####|$)/) || [])[1]?.trim() || ''
-                      }</ReactMarkdown>
-                    </div>
-                  )}
-                  {/* Constraints */}
-                  {mockProblem.constraints.length > 0 && (
-                    <div className="mb-2 mt-4">
-                      <div className="font-semibold mb-1 text-white">Constraints:</div>
-                      <ul className="list-disc ml-5 text-xs">
-                        {mockProblem.constraints.map((c, i) => (
-                          <li key={i}><span className="bg-neutral-800 px-2 py-0.5 rounded text-[#A594F9]">{c}</span></li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {/* Examples */}
-                  {mockProblem.examples.length > 0 && (
-                    <div className="mb-2 mt-4">
-                      <div className="font-semibold mb-1 text-white">Examples:</div>
-                      {mockProblem.examples.map((ex, i) => (
-                        <div key={i} className="bg-neutral-800 rounded p-2 mb-1 text-xs">
-                          <div><span className="text-[#A594F9]">Input:</span> {ex.input}</div>
-                          <div><span className="text-green-300">Output:</span> {ex.output}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <div className="prose prose-invert mb-4">
+                    <ReactMarkdown>
+                    {matchDetails.problem.description}
+                    </ReactMarkdown>
+                  </div>
+                  
                 </div>
               </CardContent>
             </Card>
@@ -193,10 +106,35 @@ export default function BattlePage() {
             <div className="flex items-center gap-2 mb-2 justify-center w-full">
               <span className="bg-[#232136] border border-fuchsia-700 rounded px-4 py-2 text-base text-white min-w-[120px] font-mono text-center">Python</span>
               {verdict && (
-                <span className={`ml-2 px-2 py-1 rounded text-xs font-semibold ${verdict === "Accepted" ? "bg-green-700 text-green-200" : "bg-red-700 text-red-200"}`}>
+                <span className={`ml-2 px-2 py-1 rounded text-md font-semibold ${verdict === "Accepted" ? "bg-green-700 text-green-200" : "bg-red-700 text-red-200"}`}>
                   {verdict === "Accepted" ? "Accepted" : "Rejected"}
                 </span>
               )}
+            </div>
+
+            <div className="flex gap-2 justify-end mb-4">
+              <Button onClick={handleSubmit} className="bg-fuchsia-600 text-white hover:bg-fuchsia-700 px-6 py-2 text-base font-semibold rounded-md">Submit</Button>
+              <Dialog open={resignDialogOpen} onOpenChange={setResignDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-slate-900 border border-red-500 text-red-500 cursor-pointer hover:bg-neutral-900 px-6 py-2 text-base font-semibold rounded-md">Resign</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Are you sure you want to resign?</DialogTitle>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      onClick={handleResign}
+                      className="bg-[#101010] text-white hover:bg-[#232323] border-none shadow-none"
+                    >
+                      Yes, Resign
+                    </Button>
+                    <DialogClose asChild>
+                      <Button className="bg-[#A594F9] text-white hover:bg-[#b3a0e6] border-none shadow-none">Cancel</Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
             <div className="flex-1 min-h-[200px]">
               <MonacoEditor
@@ -205,6 +143,7 @@ export default function BattlePage() {
                 language="python"
                 value={code}
                 theme="vs-dark"
+                onMount={handleEditorDidMount}
                 options={{
                   fontSize: 16,
                   minimap: { enabled: false },
@@ -219,4 +158,105 @@ export default function BattlePage() {
       </ResizablePanelGroup>
     </div>
   );
+}
+
+export default function MainBattlePage() {
+  const [matchDetails, setMatchDetails] = useState({
+    "matchId": "52fa5208-c54c-4bfd-84f7-a476e1a6e489",
+    "players": [
+        "luffy",
+        "roronoa"
+    ],
+    "createdAt": 1748628025957,
+    "status": "pending",
+    "problem": {
+        "id": "ea148cb6-ed5e-4fa6-8873-02096a1cc8c5",
+        "slug": "sum-of-even",
+        "description": "## Sum of Even Numbers\n\nGiven an array of integers, return the sum of all even numbers in the array.\n\n### Input Format\n- First line: `N` (number of elements)  \n- Second line: `N` space-separated integers\n\n### Output Format\n- A single integer — the **sum of even numbers**\n\n### Constraints\n- `1 ≤ N ≤ 10^5`  \n- `-10^9 ≤ arr[i] ≤ 10^9`\n### Example\n\n**Input**\n```\n5\n1 2 3 4 5\n```\n\n**Output**\n```\n6\n```\n",
+        "codeSnippet": "int sumOfEven(arr):\n     ##Implementation goes here\n"
+    }
+});
+  const [isPolling, setIsPolling] = useState(false);
+  const [pollingError, setPollingError] = useState(null);
+  const [pollingAttempts, setPollingAttempts] = useState(0);
+  const maxAttempts = 30; // Maximum number of polling attempts (e.g., 30 * 2s = 60s)
+  const pollingInterval = 2000; // Poll every 2 seconds
+
+  // useEffect(() => {
+  //   const startMatchmaking = async () => {
+  //     try {
+  //       const res = await axios.get('/find-match');
+  //       if (res.data.success) {
+  //         console.log("Matchmaking started successfully");
+  //         setIsPolling(true);
+  //       } else {
+  //         console.error("Failed to start matchmaking:", res.data);
+  //         setPollingError("Failed to start matchmaking. Please try again.");
+  //       }
+  //     } catch (err) {
+  //       console.error("Error in find-match:", err);
+  //       setPollingError("Error starting matchmaking. Please try again.");
+  //     }
+  //   };
+  //   startMatchmaking();
+  // }, []);
+
+  // useEffect(() => {
+  //   if (!isPolling) return;
+
+  //   let isCancelled = false;
+  //   let attempts = pollingAttempts; 
+
+  //   const pollStatus = async () => {
+  //     while (!isCancelled && attempts < maxAttempts) {
+  //       try {
+  //         const res = await axios.get('/status-fm');
+  //         console.log("Polling result:", res.data);
+
+  //         if (res.data.success && res.data.matchDetails) {
+  //           setMatchDetails(res.data.matchDetails);
+  //           setIsPolling(false);
+  //           return; // Exit polling on success
+  //         } else {
+  //           console.log("Match not found yet, continuing to poll...");
+  //         }
+
+  //         attempts += 1;
+  //         setPollingAttempts(attempts); // Update state after increment
+  //       } catch (err) {
+  //         console.error("Polling error:", err);
+  //         setPollingError("Error checking match status. Retrying...");
+  //       }
+
+  //       if (attempts >= maxAttempts) {
+  //         setIsPolling(false);
+  //         setPollingError("No match found after maximum attempts. Please try again.");
+  //         return;
+  //       }
+
+  //       // Wait before the next poll
+  //       await new Promise((resolve) => setTimeout(resolve, pollingInterval));
+  //     }
+  //   };
+
+  //   pollStatus();
+
+  //   return () => {
+  //     isCancelled = true;
+  //   };
+  // }, [isPolling]); 
+
+  if (pollingError) {
+    return (
+      <div className="min-h-screen bg-[#101010] text-white flex items-center justify-center">
+        <div className="text-red-400">{pollingError}</div>
+      </div>
+    );
+  }
+
+  if (!matchDetails) {
+    return <FindingMatchPage attempts={pollingAttempts} maxAttempts={maxAttempts} />;
+  }
+
+  return <BattlePage matchDetails={matchDetails} />;
 }
