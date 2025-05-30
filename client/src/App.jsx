@@ -2,7 +2,7 @@ import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
-import Rivals from "./pages/Rivals";
+import Leaderboard from "./pages/Leaderboard";
 import Resources from "./pages/Resources";
 import BattlePage from "./pages/BattlePage";
 import { SlideTabsExample } from "./components/Navbar";
@@ -25,12 +25,12 @@ export default function App() {
           <SlideTabsExample />
         </header>
       )}
-      <main className={isAuthenticated && !isLanding && !isBattle ? "pt-20" : ""}>
+      <main className={!isLanding && !isBattle ? "pt-20" : ""}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/resources" element={<Resources />} />
-          <Route path="/rivals" element={<Rivals />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/battle" element={<BattlePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
