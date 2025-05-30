@@ -18,8 +18,8 @@ export function LogoutButton() {
   const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     showSuccess("Logged out successfully!");
     setOpen(false);
     navigate("/");

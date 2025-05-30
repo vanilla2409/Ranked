@@ -4,7 +4,7 @@ import { useAuth } from "../lib/useAuth"
 import { Button } from "../components/ui/button"
 import { Card, CardContent } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
-import { Users, Target, Sword, Crown, TrendingUp, User } from "lucide-react"
+import { Users, Target, Crown, TrendingUp, User } from "lucide-react"
 import {
   Dialog,
   DialogTrigger,
@@ -17,6 +17,7 @@ import {
 } from "../components/ui/dialog"
 import { Input } from "../components/ui/input"
 import { showSuccess, showError } from "../components/ui/sonner"
+import axios from "../lib/axios"
 
 export default function LandingPage() {
   const { user } = useAuth()
@@ -46,31 +47,25 @@ export default function LandingPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      // Send both email and username fields for compatibility
-      const res = await fetch("/users/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: loginForm.email,
-          username: loginForm.email, // send as both for backend compatibility
-          password: loginForm.password,
-        }),
-        credentials: "include",
+      const response = await axios.post(`/users/login`, {
+        email: loginForm.email,
+        password: loginForm.password,
       })
-      let data = {}
-      try {
-        data = await res.json()
-      } catch (err) {
-        throw new Error("Server error: Invalid response")
+      if (response.data.success) {
+        showSuccess("Logged in successfully")
+        setLoginForm({ email: "", password: "" })
+        setTimeout(() => {
+          setLoading(false)
+          navigate("/dashboard")
+        }, 1000)
       }
-      if (!res.ok || data.success === false) throw new Error(data.message || "Login failed")
-      showSuccess("Login successful!")
-      setLoginOpen(false)
-      setLoginForm({ email: "", password: "" })
-    } catch (err) {
-      showError(err.message)
-    } finally {
-      setLoading(false)
+      else {
+        showError(response.data.message || "Login failed")
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error("Login error:", error)
+      showError("An error occurred while logging in. Please try again.")
     }
   }
 
@@ -83,22 +78,19 @@ export default function LandingPage() {
       return
     }
     try {
-      const res = await fetch("/users/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(signupForm),
-        credentials: "include",
+      const response = await axios.post(`/users/signup`, {
+        username: signupForm.username,
+        email: signupForm.email,
+        password: signupForm.password,
       })
-      let data = {}
-      try {
-        data = await res.json()
-      } catch (err) {
-        throw new Error("Server error: Invalid response")
+      if (response.data.success) {
+        showSuccess("Account created successfully! Please log in.")
+        setSignupOpen(false)
+        setSignupForm({ username: "", email: "", password: "", confirmPassword: "" })
       }
-      if (!res.ok || data.success === false) throw new Error(data.message || "Signup failed")
-      showSuccess("Signup successful!")
-      setSignupOpen(false)
-      setSignupForm({ username: "", email: "", password: "", confirmPassword: "" })
+      else {
+        showError(response.data.message || "Signup failed")
+      }
     } catch (err) {
       showError(err.message)
     } finally {
