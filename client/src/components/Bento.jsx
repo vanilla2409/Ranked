@@ -1,30 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { twMerge } from "tailwind-merge";
 import { useNavigate } from "react-router-dom";
-import axios from "../lib/axios";
+import { useAuth } from "../lib/useAuth";
 
 export const RevealBento = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ matchesPlayed: 0, matchesWon: 0 });
+  const { user, userStats, loading } = useAuth();
 
-  useEffect(() => {
-    // Replace '/user/stats' with your actual backend endpoint
-    axios.get("/user/stats")
-      .then(res => {
-        setStats({
-          matchesPlayed: res.data.matchesPlayed || 0,
-          matchesWon: res.data.matchesWon || 0,
-        });
-      })
-      .catch(() => {
-        setStats({ matchesPlayed: 0, matchesWon: 0 });
-      });
-  }, []);
 
-  const matchesLost = Math.max(stats.matchesPlayed - stats.matchesWon, 0);
-  const winRate = stats.matchesPlayed > 0
-    ? ((stats.matchesWon / stats.matchesPlayed) * 100).toFixed(1)
+
+  const matchesLost = Math.max(userStats.matchesPlayed - userStats.matchesWon, 0);
+  const winRate = userStats.matchesPlayed > 0
+    ? ((userStats.matchesWon / userStats.matchesPlayed) * 100).toFixed(1)
     : "0.0";
 
   return (
@@ -35,10 +22,10 @@ export const RevealBento = () => {
         transition={{ staggerChildren: 0.05 }}
         className="mx-auto grid max-w-4xl grid-flow-dense grid-cols-12 gap-4"
       >
-        <HeaderBlock />
+        <HeaderBlock user={user} />
         <SocialsBlock
-          matchesPlayed={stats.matchesPlayed}
-          matchesWon={stats.matchesWon}
+          matchesPlayed={userStats.matchesPlayed}
+          matchesWon={userStats.matchesWon}
           matchesLost={matchesLost}
           winRate={winRate}
         />
@@ -65,28 +52,14 @@ const Block = ({ className, ...rest }) => {
   );
 };
 
-const HeaderBlock = () => {
-  const [user, setUser] = React.useState({ username: '', elo: null });
-
-  React.useEffect(() => {
-    // Fetch the logged-in user's name and ELO from backend (replace endpoint as needed)
-    axios.get("/user/profile").then(res => {
-      setUser({
-        username: res.data.username || "User",
-        elo: res.data.elo || null,
-      });
-    }).catch(() => {
-      setUser({ username: "User", elo: null });
-    });
-  }, []);
-
+const HeaderBlock = ({ user }) => {
   return (
     <Block className="col-span-12 row-span-2 md:col-span-6 flex flex-col items-center justify-center">
       <h1 className="mb-2 text-4xl font-bold text-center">
         {user.username}
       </h1>
       <div className="text-lg text-zinc-400 font-medium text-center mb-1">
-        Rank: -
+        Rank: {user.rank ? user.rank : "Unranked"}
       </div>
       <div className="text-base text-zinc-400 font-medium text-center">
         ELO: {user.elo !== null ? user.elo : "-"}
@@ -127,21 +100,3 @@ const SocialsBlock = ({ matchesPlayed, matchesWon, matchesLost, winRate }) => (
     </Block>
   </>
 );
-
-// Leaderboard logic (for Leaderboard.jsx):
-// Fetch and sort leaderboard data by ELO descending
-// Example usage in Leaderboard.jsx:
-//
-// const [players, setPlayers] = useState([]);
-// useEffect(() => {
-//   axios.get('/leaderboard').then(res => {
-//     // Sort by ELO descending
-//     const sorted = (res.data.players || []).sort((a, b) => b.elo - a.elo);
-//     setPlayers(sorted);
-//   });
-// }, []);
-//
-// ...render sorted players...
-
-
-
