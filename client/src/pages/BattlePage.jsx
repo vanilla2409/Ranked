@@ -16,8 +16,8 @@ function BattlePage({ matchDetails }) {
   const navigate = useNavigate();
   const [code, setCode] = useState(matchDetails.problem.codeSnippet);
   const [output, setOutput] = useState("");
-  const [verdict, setVerdict] = useState("Accepted"); 
-  const [timer, setTimer] = useState(0); 
+  const [verdict, setVerdict] = useState("");
+  const [timer, setTimer] = useState(0);
   const [timerActive, setTimerActive] = useState(true);
   const [resignDialogOpen, setResignDialogOpen] = useState(false);
   const editorRef = useRef(null);
@@ -34,22 +34,64 @@ function BattlePage({ matchDetails }) {
     return () => clearInterval(interval);
   }, [timerActive]);
 
-  const handleSubmit = () => {
-    console.log(editorRef.current.getValue());
-    setOutput("Test cases passed!\nAll outputs correct.");
-    setVerdict("Accepted");
-    setTimerActive(false); 
+  const handleSubmit = async () => {
+
+    try {
+      const response = await axios.post('/submit', {
+        problemId: matchDetails.problem.id,
+        solutionCode: editorRef.current.getValue(),
+      })
+      if (response.data.success) {
+        const tokens = response.data.tokens;
+        const maxAttempts = 6; // Maximum number of polling attempts
+        let attempts = 0;
+        const pollingInterval = 2000; // Poll every 2 seconds
+        const pollStatus = async () => {
+          while (attempts < maxAttempts) {
+            try {
+              const res = await axios.post('/status-submission', {
+                tokens: tokens,
+              });
+              if (res.data.success) {
+                console.log(res.data);
+                setOutput(res.data.message);
+                setVerdict('Accepted');
+                return; // Exit polling on success
+              }
+              else {
+                if(res.data.message === "PENDING") continue; 
+                setOutput(res.data.message);
+                setVerdict('Wrong Answer');
+                return; // Exit polling on failure
+              }
+            } catch (err) {
+              console.error("Polling error:", err);
+            }
+            attempts += 1;
+            await new Promise(resolve => setTimeout(resolve, pollingInterval));
+          }
+          setOutput("Polling timed out. Please try again later.");
+          setVerdict("Error");
+        };
+
+        await pollStatus();
+
+      }
+    } catch (error) {
+      console.error("Error submitting solution:", error.data.message);
+    }
   };
+
   const handleResign = () => {
     setOutput("You resigned. Better luck next time!");
     setVerdict("Wrong Answer");
-    setTimerActive(false); 
+    setTimerActive(false);
   };
   const handleExit = () => {
     navigate("/dashboard");
   };
 
-  const formatTime = (s) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2, "0")}`;
+  const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
     <div className="min-h-screen bg-[#101010] text-white flex flex-col">
@@ -90,10 +132,10 @@ function BattlePage({ matchDetails }) {
                   </h2>
                   <div className="prose prose-invert mb-4">
                     <ReactMarkdown>
-                    {matchDetails.problem.description}
+                      {matchDetails.problem.description}
                     </ReactMarkdown>
                   </div>
-                  
+
                 </div>
               </CardContent>
             </Card>
@@ -112,7 +154,8 @@ function BattlePage({ matchDetails }) {
               )}
             </div>
 
-            <div className="flex gap-2 justify-end mb-4">
+            <div className="flex gap-2 justify-evenly mb-4 items-center">
+              <span className={`text-lg ${verdict === "Accepted" ? "text-green-500" : "text-red-400"}`}>{output}</span>
               <Button onClick={handleSubmit} className="bg-fuchsia-600 text-white hover:bg-fuchsia-700 px-6 py-2 text-base font-semibold rounded-md">Submit</Button>
               <Dialog open={resignDialogOpen} onOpenChange={setResignDialogOpen}>
                 <DialogTrigger asChild>
@@ -164,18 +207,18 @@ export default function MainBattlePage() {
   const [matchDetails, setMatchDetails] = useState({
     "matchId": "52fa5208-c54c-4bfd-84f7-a476e1a6e489",
     "players": [
-        "luffy",
-        "roronoa"
+      "luffy",
+      "roronoa"
     ],
     "createdAt": 1748628025957,
     "status": "pending",
     "problem": {
-        "id": "ea148cb6-ed5e-4fa6-8873-02096a1cc8c5",
-        "slug": "sum-of-even",
-        "description": "## Sum of Even Numbers\n\nGiven an array of integers, return the sum of all even numbers in the array.\n\n### Input Format\n- First line: `N` (number of elements)  \n- Second line: `N` space-separated integers\n\n### Output Format\n- A single integer — the **sum of even numbers**\n\n### Constraints\n- `1 ≤ N ≤ 10^5`  \n- `-10^9 ≤ arr[i] ≤ 10^9`\n### Example\n\n**Input**\n```\n5\n1 2 3 4 5\n```\n\n**Output**\n```\n6\n```\n",
-        "codeSnippet": "int sumOfEven(arr):\n     ##Implementation goes here\n"
+      "id": "ea148cb6-ed5e-4fa6-8873-02096a1cc8c5",
+      "slug": "sum-of-even",
+      "description": "## Sum of Even Numbers\n\nGiven an array of integers, return the sum of all even numbers in the array.\n\n### Input Format\n- First line: `N` (number of elements)  \n- Second line: `N` space-separated integers\n\n### Output Format\n- A single integer — the **sum of even numbers**\n\n### Constraints\n- `1 ≤ N ≤ 10^5`  \n- `-10^9 ≤ arr[i] ≤ 10^9`\n### Example\n\n**Input**\n```\n5\n1 2 3 4 5\n```\n\n**Output**\n```\n6\n```\n",
+      "codeSnippet": "def sum_of_even(arr):\n     ##Implementation goes here\n"
     }
-});
+  });
   const [isPolling, setIsPolling] = useState(false);
   const [pollingError, setPollingError] = useState(null);
   const [pollingAttempts, setPollingAttempts] = useState(0);
