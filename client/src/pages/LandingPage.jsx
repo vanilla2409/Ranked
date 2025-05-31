@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../lib/useAuth"
 import { Button } from "../components/ui/button"
@@ -32,12 +32,41 @@ export default function LandingPage() {
     confirmPassword: "",
   })
   const [loading, setLoading] = useState(false)
+  const [leaderboard, setLeaderboard] = useState([])
 
   React.useEffect(() => {
     if (user) {
       navigate("/dashboard", { replace: true })
     }
   }, [user, navigate])
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        const response = await axios.get("/leaderboard", { params: { range: 5 } })
+        if (response.data.success) {
+          const modifiedLeaderboard = response.data.leaderboard.reduce((acc, curr, idx, arr) => {
+            if (idx % 2 === 0) {
+              acc.push({
+                rank: acc.length + 1,
+                username: curr,
+                rating: parseFloat(arr[idx + 1]),
+                isTop: acc.length < 5, // mark top 5 as `isTop`
+              });
+            }
+            return acc;
+          }, []);
+          setLeaderboard(modifiedLeaderboard)
+          console.log("Leaderboard fetched successfully:", response.data.leaderboard)
+        } else {
+          showError(response.data.message || "Failed to fetch leaderboard")
+        }
+      } catch (error) {
+        console.error("Error fetching leaderboard:", error)
+      }
+    }
+    fetchLeaderboard()
+  }, [])
 
   // Handlers for login/signup
   const handleLoginChange = (e) => setLoginForm({ ...loginForm, [e.target.name]: e.target.value })
@@ -48,7 +77,7 @@ export default function LandingPage() {
     setLoading(true)
     try {
       const {data} = await axios.post(`/users/login`, {
-        email: loginForm.email,
+        usernameOrEmail: loginForm.email,
         password: loginForm.password,
       })
       if (data.success) {
@@ -323,13 +352,7 @@ export default function LandingPage() {
                 </div>
 
                 <div className="divide-y divide-fuchsia-900/30">
-                  {[
-                    { rank: 1, username: "CodeMaster_X", rating: 2847, isTop: true },
-                    { rank: 2, username: "AlgoNinja", rating: 2756, isTop: true },
-                    { rank: 3, username: "ByteWarrior", rating: 2689, isTop: true },
-                    { rank: 4, username: "DataStructGod", rating: 2634, isTop: false },
-                    { rank: 5, username: "RecursiveQueen", rating: 2598, isTop: false },
-                  ].map((player) => (
+                  {leaderboard.map((player, idx) => (
                     <div
                       key={player.rank}
                       className={`flex items-center justify-between p-4 transition-colors ${
@@ -434,8 +457,8 @@ export default function LandingPage() {
           <form onSubmit={handleLogin} className="grid gap-4 py-4">
             <Input
               name="email"
-              type="email"
-              placeholder="Email"
+              type="text"
+              placeholder="Email or Username"
               value={loginForm.email}
               onChange={handleLoginChange}
               required

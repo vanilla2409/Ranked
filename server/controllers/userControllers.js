@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { findUserByUsernameOrEmail, createNewUser, checkUserAuthentication } from '../helpers/db.js';
+import { findUserByUsernameOrEmail, createNewUser } from '../helpers/db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
@@ -32,12 +32,12 @@ export const signup = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  const { username, email, password } = req.body;
-  if ((!username && !email) || !password) {
+  const { usernameOrEmail, password } = req.body;
+  if ((!usernameOrEmail) || !password) {
     return res.status(400).json({ message: 'Username/email and password are required.' });
   }
 
-  const user = await findUserByUsernameOrEmail(username, email);
+  const user = await findUserByUsernameOrEmail(usernameOrEmail, usernameOrEmail);
 
   if (!user) {
     return res.status(401).json({ success: false, message: 'Invalid credentials.' });

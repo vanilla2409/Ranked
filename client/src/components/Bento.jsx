@@ -32,7 +32,7 @@ export const RevealBento = () => {
       </motion.div>
       <div className="flex justify-center mt-8">
         <button
-          className="bg-[#A594F9] text-white hover:bg-[#b3a0e6] hover:text-white border-none shadow-none px-8 py-3 text-lg font-semibold rounded-md"
+          className="bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-700 hover:to-purple-700 text-white border-0 shadow-none px-8 py-3 text-lg font-semibold rounded-md"
           onClick={() => navigate("/battle")}
         >
           Compete
