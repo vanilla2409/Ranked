@@ -14,14 +14,16 @@ import { setSubmissionForUser, getSubmissionForUser } from './helpers/redisSubmi
 import { addNewMatch } from './helpers/db.js'
 import { updateMatchResults } from './helpers/glicko.js'
 import cookieParser from 'cookie-parser'
+import auth from './middleware/auth.js'
 const app = express()
 
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
 }))
-app.use(cookieParser())
+
 app.use(express.json())
+app.use(cookieParser())
 
 
 app.use('/users', userRouter)
@@ -31,6 +33,7 @@ app.get('/', (req, res) => {
   res.send('API is running')
 })
 
+// app.use(auth)
 
 app.post('/submit', async (req, res) => {
   const {problemId , solutionCode, username} = req.body;
@@ -128,7 +131,7 @@ app.put('/judge0/callback', async (req, res) => {
 });
 
 app.get('/find-match', async (req, res) => {
-  const {userId, username} = req.body;
+  const {userId, username} = req.user;
 
   if(!userId || !username)
     return res.json({
@@ -151,7 +154,7 @@ app.get('/find-match', async (req, res) => {
 })
 
 app.get('/status-fm' , async (req, res) => {
-  const {userId, username} = req.body;
+  const {userId, username} = req.user;
 
   if(!userId || !username)
     return res.json({
@@ -173,12 +176,12 @@ app.get('/status-fm' , async (req, res) => {
   }
 })
 
-app.get('/status-submission', async (req, res) => {
+app.post('/status-submission', async (req, res) => {
   const {tokens} = req.body;
 
   if(tokens.length === 0)
     return res.json({
-      success: "false",
+      success: false,
       message: "Submission ID is required"
     })
 
@@ -186,20 +189,25 @@ app.get('/status-submission', async (req, res) => {
     const submission = await getSubmissionForUser(token);
     if(!submission) {
       return res.json({
-        success: "false",
+        success: false,
         message: "Invalid submission ID"
       });
     }
 
     if(submission.status !== 'Accepted'){
       res.json({
-        success: "false",
+        success: false,
         message: submission.status
       });
       return;
     }
   }
-  
+  return res.json({
+    success: true,
+    message: "All submissions are accepted",
+    result: "You won the match",
+    ratingDifference: 40 // This can be updated based on your logic
+  });
   const matchDetails = await getMatchDetails(req.body.matchId);
 
   if(matchDetails.status === 'pending') { // if true, he is the first person to finish (hence winner)

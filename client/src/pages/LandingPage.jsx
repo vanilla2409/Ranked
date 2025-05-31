@@ -20,7 +20,7 @@ import { showSuccess, showError } from "../components/ui/sonner"
 import axios from "../lib/axios"
 
 export default function LandingPage() {
-  const { user } = useAuth()
+  const { user, setUser } = useAuth()
   const navigate = useNavigate()
   const [loginOpen, setLoginOpen] = useState(false)
   const [signupOpen, setSignupOpen] = useState(false)
@@ -47,25 +47,31 @@ export default function LandingPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      const response = await axios.post(`/users/login`, {
+      const {data} = await axios.post(`/users/login`, {
         email: loginForm.email,
         password: loginForm.password,
       })
-      if (response.data.success) {
+      if (data.success) {
         showSuccess("Logged in successfully")
         setLoginForm({ email: "", password: "" })
+        setLoading(false)
+        setUser(data.user)
         setTimeout(() => {
-          setLoading(false)
-          navigate("/dashboard")
+          navigate("/dashboard" , { replace: true })
         }, 1000)
       }
       else {
-        showError(response.data.message || "Login failed")
+        showError(data.message || "Login failed")
         setLoading(false)
       }
     } catch (error) {
-      console.error("Login error:", error)
-      showError("An error occurred while logging in. Please try again.")
+      if(error.response && error.response.data) {
+        showError(error.response.data.message || "Login failed")
+      }
+      else {
+        showError("An error occurred while logging in")
+      }
+      setLoading(false)
     }
   }
 
@@ -92,7 +98,7 @@ export default function LandingPage() {
         showError(response.data.message || "Signup failed")
       }
     } catch (err) {
-      showError(err.message)
+      showError(err.data.message)
     } finally {
       setLoading(false)
     }
