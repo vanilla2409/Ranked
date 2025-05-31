@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { findUserByUsernameOrEmail, createNewUser, checkUserAuthentication } from '../helpers/db.js';
+import { findUserByUsernameOrEmail, createNewUser } from '../helpers/db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
@@ -32,26 +32,40 @@ export const signup = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  const { username, email, password } = req.body;
-  if ((!username && !email) || !password) {
+  const { usernameOrEmail, password } = req.body;
+  if ((!usernameOrEmail) || !password) {
     return res.status(400).json({ message: 'Username/email and password are required.' });
   }
 
-  const hashPassword = bcrypt.hash(password, 10);
-
-  const user = await checkUserAuthentication(username, email, hashPassword);
+  const user = await findUserByUsernameOrEmail(usernameOrEmail, usernameOrEmail);
 
   if (!user) {
-    return res.status(401).json({ message: 'Invalid credentials.' });
+    return res.status(401).json({ success: false, message: 'Invalid credentials.' });
   }
 
-  const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1d' });
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'Strict',
-  });
-  res.json({success: true, message: 'Login successful.'});
+  bcrypt.compare(password, user.passwordHash, async (err, isMatch) => {
+    if (err) {
+      console.error('Error comparing passwords:', err);
+      return res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+    if (!isMatch) {
+      console.warn('Invalid password attempt for user:', user.username);
+      return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+    }
+
+    const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1d' });
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'Strict',
+    });
+    res.json({ 
+      success: true,
+      message: 'Login successful.',
+      user: { userId: user.id, username: user.username },
+    })
+  }
+  );
 };
 
 export const verifyEmail = async (req, res) => {

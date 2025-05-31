@@ -85,17 +85,19 @@ async function createMatch(player1Id, player2Id) {
 
 // A worker that will be responsible for processing the matchmaking queue
 export async function matchmakerWorker() {
+
   console.log("🎯 Matchmaking worker started...");
 
   while (true) {
+
     const TopPlayer = await redis.zrange(MATCHMAKING_KEY, 0, 0, "WITHSCORES");
-    if (TopPlayer.length === 0) {
+    if (TopPlayer.length === 0 || TopPlayer.length === 1) {
       // No players in the queue
       console.log("No players in the matchmaking queue");
-      await new Promise((res) => setTimeout(res, 15000));
+      await new Promise((res) => setTimeout(res, 7000));
       continue;
     }
-    console.log("Top player in queue:", TopPlayer);
+
 
     const opponentId = await findOpponent(TopPlayer[0], Number(TopPlayer[1]));
 

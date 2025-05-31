@@ -9,7 +9,7 @@ const PrivateRoute = ({ children }) => {
   useEffect(() => {
     if (!loading && !user) {
       return( 
-        navigate('/signin', { replace: true })
+        navigate('/', { replace: true })
       )
     }
   }, [loading, user, navigate]);

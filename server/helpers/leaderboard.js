@@ -31,7 +31,10 @@ export async function getLeaderboard(limit) {
 // returns the rank of the user in the leaderboard
 export async function getUserRank(userId) {
     try {
-        const rank = await redis.zrank(LEADERBOARD_KEY, userId);
+        const rank = await redis.zrevrank(LEADERBOARD_KEY, userId);
+        if(rank === null) {
+            return null; // User not found in leaderboard
+        }
         return rank + 1; // Redis ranks are 0-based, so we add 1 to make it 1-based
     } catch (error) {
         console.error(`Error fetching rank for user ${userId}:`, error);

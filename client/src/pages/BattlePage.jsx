@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import MonacoEditor from "@monaco-editor/react";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "../components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "../components/ui/dialog";
 import { useNavigate } from "react-router-dom";
@@ -13,12 +13,11 @@ import { LuSwords } from "react-icons/lu";
 
 
 
+
 function BattlePage({ matchDetails }) {
   const navigate = useNavigate();
   const [code, setCode] = useState(matchDetails.problem.codeSnippet);
-  const [output, setOutput] = useState("");
-  const [verdict, setVerdict] = useState("Accepted"); 
-  const [timer, setTimer] = useState(0); 
+  const [timer, setTimer] = useState(0);
   const [timerActive, setTimerActive] = useState(true);
   const [resignDialogOpen, setResignDialogOpen] = useState(false);
   const [resultDialogOpen, setResultDialogOpen] = useState(false);
@@ -39,45 +38,75 @@ function BattlePage({ matchDetails }) {
     return () => clearInterval(interval);
   }, [timerActive]);
 
-  const handleSubmit = () => {
-    console.log(editorRef.current.getValue());
-    setOutput("Test cases passed!\nAll outputs correct.");
-    setVerdict("Accepted");
-    setTimerActive(false); 
+  const handleSubmit = async () => {
 
-    // Simulate three cases:
-    // 1. First to solve (win)
-    // 2. Solved after opponent (lose)
-    // 3. Wrong answer
-    // For demo, randomize the case. Replace with real logic as needed.
-    const random = Math.random();
-    if (code.includes("correct_solution")) { // Simulate correct solution
-      if (random < 0.5) { // First to solve
-        setResultDialogTitle("Congratulations you won!");
-        setResultDialogMessage("You were the first one to solve the problem statement.");
-        setResultDialogElo(25); // random elo gained
-      } else { // Solved after opponent
-        setResultDialogTitle("You solved the problem, but lost");
-        setResultDialogMessage("You solved the problem statement but unfortunately you lost as the opponent solved earlier than you.");
-        setResultDialogElo(-18); // random elo deducted
+    try {
+      const response = await axios.post('/submit', {
+        problemId: matchDetails.problem.id,
+        solutionCode: editorRef.current.getValue(),
+      })
+      if (response.data.success) {
+        const tokens = response.data.tokens;
+        const maxAttempts = 6; // Maximum number of polling attempts
+        let attempts = 0;
+        const pollingInterval = 2000; // Poll every 2 seconds
+        const pollStatus = async () => {
+          while (attempts < maxAttempts) {
+            try {
+              const res = await axios.post('/status-submission', {
+                tokens: tokens,
+                matchId: matchDetails.matchId,
+              });
+              if (res.data.success) {
+                console.log(res.data);
+                setResultDialogTitle(res.data.result);
+                setResultDialogMessage(res.data.message);
+                setResultDialogElo(res.data.ratingDifference);
+                setResultDialogOpen(true);
+                return; // Exit polling on success
+              }
+              else {
+                if(res.data.message === "PENDING"){
+                  attempts += 1;
+                  await new Promise(resolve => setTimeout(resolve, pollingInterval));
+                  continue; 
+                }
+                setResultDialogTitle("Error");
+                setResultDialogMessage(res.data.message);
+                setResultDialogElo(null);
+                setResultDialogOpen(true);
+                return; // Exit polling on failure
+              }
+            } catch (err) {
+              console.error("Polling error:", err);
+            }
+            attempts += 1;
+            await new Promise(resolve => setTimeout(resolve, pollingInterval));
+          }
+        };
+
+        await pollStatus();
+
       }
-    } else { // Wrong answer
-      setResultDialogTitle("Sorry, try again.");
-      setResultDialogMessage("");
-      setResultDialogElo(null);
+    } catch (error) {
+      console.error(error);
+      console.error("Error submitting solution:", error.data.message);
     }
-    setResultDialogOpen(true);
   };
+
   const handleResign = () => {
     setOutput("You resigned. Better luck next time!");
     setVerdict("Wrong Answer");
-    setTimerActive(false); 
+    setTimerActive(false);
   };
   const handleExit = () => {
+    localStorage.removeItem("matchDetails"); // Clear match details from local storage
+    setTimerActive(false); // Stop the timer
+    setResultDialogOpen(false); // Close any open dialogs
     navigate("/dashboard");
   };
 
-  const formatTime = (s) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2, "0")}`;
+  const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
     <div className="min-h-screen bg-[#101010] text-white flex flex-col">
@@ -93,6 +122,7 @@ function BattlePage({ matchDetails }) {
             <span className="font-bold text-2xl">{matchDetails.players[1]}</span>
           </div>
         </div>
+        <Button onClick={handleExit} className="bg-slate-950 text-white px-4 py-2 rounded-md"> Exit Match</Button>
       </div>
       {/* Split screen */}
       <ResizablePanelGroup direction="horizontal" className="flex-1 flex flex-col md:flex-row gap-4 p-4 overflow-auto">
@@ -116,10 +146,10 @@ function BattlePage({ matchDetails }) {
                   </h2>
                   <div className="prose prose-invert mb-4">
                     <ReactMarkdown>
-                    {matchDetails.problem.description}
+                      {matchDetails.problem.description}
                     </ReactMarkdown>
                   </div>
-                  
+
                 </div>
               </CardContent>
             </Card>
@@ -132,18 +162,7 @@ function BattlePage({ matchDetails }) {
             <div className="flex items-center gap-2 mb-2 justify-between w-full">
               <div className="flex items-center gap-2">
                 <span className="bg-[#232136] border border-fuchsia-700 rounded px-4 py-2 text-base text-white min-w-[120px] font-mono text-center">Python</span>
-                {/* Show verdict label only if code is correct */}
-                {code.includes("correct_solution") && (
-                  <span className="ml-2 px-2 py-1 rounded text-md font-semibold bg-green-700 text-green-200">
-                    Accepted, all test cases passed
-                  </span>
-                )}
-                {/* Show rejected label if code is not correct and output is set */}
-                {!code.includes("correct_solution") && output && (
-                  <span className="ml-2 px-2 py-1 rounded text-md font-semibold bg-red-700 text-red-200">
-                    Rejected, try again
-                  </span>
-                )}
+                
               </div>
               <div className="flex gap-2">
                 <Button onClick={handleSubmit} className="bg-fuchsia-600 text-white hover:bg-fuchsia-700 px-6 py-2 text-base font-semibold rounded-md">Submit</Button>
@@ -225,90 +244,82 @@ function ResultDialog({ open, onClose, title, message, eloChange }) {
 }
 
 export default function MainBattlePage() {
-  const [matchDetails, setMatchDetails] = useState({
-    "matchId": "52fa5208-c54c-4bfd-84f7-a476e1a6e489",
-    "players": [
-        "luffy",
-        "roronoa"
-    ],
-    "createdAt": 1748628025957,
-    "status": "pending",
-    "problem": {
-        "id": "ea148cb6-ed5e-4fa6-8873-02096a1cc8c5",
-        "slug": "sum-of-even",
-        "description": "## Sum of Even Numbers\n\nGiven an array of integers, return the sum of all even numbers in the array.\n\n### Input Format\n- First line: `N` (number of elements)  \n- Second line: `N` space-separated integers\n\n### Output Format\n- A single integer — the **sum of even numbers**\n\n### Constraints\n- `1 ≤ N ≤ 10^5`  \n- `-10^9 ≤ arr[i] ≤ 10^9`\n### Example\n\n**Input**\n```\n5\n1 2 3 4 5\n```\n\n**Output**\n```\n6\n```\n",
-        "codeSnippet": "int sumOfEven(arr):\n     ##Implementation goes here\n"
-    }
-});
+  const [matchDetails, setMatchDetails] = useState(null);
   const [isPolling, setIsPolling] = useState(false);
   const [pollingError, setPollingError] = useState(null);
   const [pollingAttempts, setPollingAttempts] = useState(0);
   const maxAttempts = 30; // Maximum number of polling attempts (e.g., 30 * 2s = 60s)
   const pollingInterval = 2000; // Poll every 2 seconds
 
-  // useEffect(() => {
-  //   const startMatchmaking = async () => {
-  //     try {
-  //       const res = await axios.get('/find-match');
-  //       if (res.data.success) {
-  //         console.log("Matchmaking started successfully");
-  //         setIsPolling(true);
-  //       } else {
-  //         console.error("Failed to start matchmaking:", res.data);
-  //         setPollingError("Failed to start matchmaking. Please try again.");
-  //       }
-  //     } catch (err) {
-  //       console.error("Error in find-match:", err);
-  //       setPollingError("Error starting matchmaking. Please try again.");
-  //     }
-  //   };
-  //   startMatchmaking();
-  // }, []);
+  useEffect(() => {
+    const startMatchmaking = async () => {
+      const matchExists = localStorage.getItem("matchDetails"); // Check if match details are already stored
+      if (matchExists) {
+        setMatchDetails(JSON.parse(matchExists));
+        return; // Exit if match details already exist
+      }
+      try {
+        const res = await axios.get('/find-match');
+        if (res.data.success) {
+          console.log("Matchmaking started successfully");
+          setIsPolling(true);
+        } else {
+          console.error("Failed to start matchmaking:", res.data);
+          setPollingError("Failed to start matchmaking. Please try again.");
+        }
+      } catch (err) {
+        console.error("Error in find-match:", err);
+        setPollingError("Error starting matchmaking. Please try again.");
+      }
+    };
+    startMatchmaking();
+  }, []);
 
-  // useEffect(() => {
-  //   if (!isPolling) return;
+  useEffect(() => {
+    if (!isPolling) return;
 
-  //   let isCancelled = false;
-  //   let attempts = pollingAttempts; 
+    let isCancelled = false;
+    let attempts = pollingAttempts; 
 
-  //   const pollStatus = async () => {
-  //     while (!isCancelled && attempts < maxAttempts) {
-  //       try {
-  //         const res = await axios.get('/status-fm');
-  //         console.log("Polling result:", res.data);
+    const pollStatus = async () => {
+      while (!isCancelled && attempts < maxAttempts) {
+        try {
+          const res = await axios.get('/status-fm');
+          console.log("Polling result:", res.data);
 
-  //         if (res.data.success && res.data.matchDetails) {
-  //           setMatchDetails(res.data.matchDetails);
-  //           setIsPolling(false);
-  //           return; // Exit polling on success
-  //         } else {
-  //           console.log("Match not found yet, continuing to poll...");
-  //         }
+          if (res.data.success && res.data.matchDetails) {
+            setMatchDetails(res.data.matchDetails);
+            setIsPolling(false);
+            localStorage.setItem("matchDetails", JSON.stringify(res.data.matchDetails));
+            return; // Exit polling on success
+          } else {
+            console.log("Match not found yet, continuing to poll...");
+          }
 
-  //         attempts += 1;
-  //         setPollingAttempts(attempts); // Update state after increment
-  //       } catch (err) {
-  //         console.error("Polling error:", err);
-  //         setPollingError("Error checking match status. Retrying...");
-  //       }
+          attempts += 1;
+          setPollingAttempts(attempts); // Update state after increment
+        } catch (err) {
+          console.error("Polling error:", err);
+          setPollingError("Error checking match status. Retrying...");
+        }
 
-  //       if (attempts >= maxAttempts) {
-  //         setIsPolling(false);
-  //         setPollingError("No match found after maximum attempts. Please try again.");
-  //         return;
-  //       }
+        if (attempts >= maxAttempts) {
+          setIsPolling(false);
+          setPollingError("No match found after maximum attempts. Please try again.");
+          return;
+        }
 
-  //       // Wait before the next poll
-  //       await new Promise((resolve) => setTimeout(resolve, pollingInterval));
-  //     }
-  //   };
+        // Wait before the next poll
+        await new Promise((resolve) => setTimeout(resolve, pollingInterval));
+      }
+    };
 
-  //   pollStatus();
+    pollStatus();
 
-  //   return () => {
-  //     isCancelled = true;
-  //   };
-  // }, [isPolling]); 
+    return () => {
+      isCancelled = true;
+    };
+  }, [isPolling]); 
 
   if (pollingError) {
     return (

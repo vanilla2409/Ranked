@@ -14,14 +14,17 @@ import { setSubmissionForUser, getSubmissionForUser } from './helpers/redisSubmi
 import { addNewMatch } from './helpers/db.js'
 import { updateMatchResults } from './helpers/glicko.js'
 import cookieParser from 'cookie-parser'
+import auth from './middleware/auth.js'
+import { getLeaderboard } from './helpers/leaderboard.js'
 const app = express()
 
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
 }))
-app.use(cookieParser())
+
 app.use(express.json())
+app.use(cookieParser())
 
 
 app.use('/users', userRouter)
@@ -31,13 +34,47 @@ app.get('/', (req, res) => {
   res.send('API is running')
 })
 
+app.get('/leaderboard' , async (req, res) => {
+  console.log('Fetching leaderboard with range:', req.params.range);
+  const range = req.params.range ? parseInt(req.params.range) : 10; // Default to top 10 if no range is provided
+  const leaderboard = await getLeaderboard(range);
+
+  res.json({
+    success: true,
+    leaderboard,
+  });
+})
+
+app.put('/judge0/callback', async (req, res) => {
+  try {
+    const body = req.body;
+
+    // console.log('Judge0 callback received:', body);
+
+    const submissionId = body.token
+    const status = body.status.description;
+
+    await setSubmissionForUser(submissionId, {status: status});
+
+    if (!submissionId || !status) {
+      return res.status(400).json({ error: 'Missing token/submission_id or status' });
+    }
+
+    res.status(200).json({ message: 'Callback received successfully' });
+  } catch (error) {
+    console.error('Error handling Judge0 callback:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.use(auth)
 
 app.post('/submit', async (req, res) => {
-  const {problemId , solutionCode, username} = req.body;
+  const { problemId , solutionCode } = req.body;
 
   if(!problemId || !solutionCode)
     return res.json({
-      success: "false",
+      success: false,
       message: "Problem ID and solution code are required"
     })
 
@@ -49,7 +86,7 @@ app.post('/submit', async (req, res) => {
   
   if(!problem)
     return res.json({
-      success: "false",
+      success: false,
       message: "Problem does not exists"
     })
   
@@ -61,13 +98,14 @@ app.post('/submit', async (req, res) => {
     language_id: 71, 
     stdin: tc.input,
     cpu_time_limit: 10,
-    expected_output: tc.output,
+    expected_output: tc.expected_output,
     memory_limit: null,
     max_processes_and_or_threads: 10,
     callback_url: process.env.CALLBACK_URL,
   }));
   
   let response = null;
+  // console.log('Submissions:', submissions);
   try {
     response = await axios.post(
       `${process.env.JUDGE0_API_URL}/submissions/batch`,
@@ -89,7 +127,7 @@ app.post('/submit', async (req, res) => {
     })
 
     res.json({
-      success: "true",
+      success: true,
       message: "Code submitted successfully",
       tokens: response.data.map(submission => submission.token)
     })
@@ -101,84 +139,59 @@ app.post('/submit', async (req, res) => {
   
 })
 
-app.put('/judge0/callback', async (req, res) => {
-  try {
-    const body = req.body;
-
-    console.log('Judge0 callback received:', body);
-
-    const submissionId = body.token
-    const status = body.status.description;
-
-    await setSubmissionForUser(submissionId, {status: status});
-
-    if (!submissionId || !status) {
-      return res.status(400).json({ error: 'Missing token/submission_id or status' });
-    }
-
-    // You can now update the submission status in your DB
-    // Example:
-    // await prisma.submission.update({ where: { id: submissionId }, data: { status } });
-
-    res.status(200).json({ message: 'Callback received successfully' });
-  } catch (error) {
-    console.error('Error handling Judge0 callback:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 app.get('/find-match', async (req, res) => {
-  const {userId, username} = req.body;
+  const {userId, username} = req.user;
 
   if(!userId || !username)
     return res.json({
-      success: "false",
+      success: false,
       message: "Unauthorized"
     })
+
   const player = await checkPlayer(username);
-  console.log('Player:', player);
-  console.log('Player rating:', player.getRating());
+  // console.log('Player:', player);
+  // console.log('Player rating:', player.getRating());
   const response = await addToMatchmakingQueue(player.id, player.getRating());
   if(response) {
     return res.json({
-      success: "true",
+      success: true,
     });
   } else {
     return res.json({
-      success: "false",
+      success: false,
     });
   }
 })
 
 app.get('/status-fm' , async (req, res) => {
-  const {userId, username} = req.body;
+  const {userId, username} = req.user;
 
   if(!userId || !username)
     return res.json({
-      success: "false",
+      success: false,
       message: "Unauthorized"
     })
   
   const matchFound = await getMatchForPlayer(username);
   if(matchFound) {
     return res.json({
-      success: "true",
+      success: true,
       matchDetails: matchFound
     });
   } else {
     return res.json({
-      success: "false",
+      success: false,
       message: "No match found"
     });
   }
 })
 
-app.get('/status-submission', async (req, res) => {
+app.post('/status-submission', async (req, res) => {
   const {tokens} = req.body;
 
   if(tokens.length === 0)
     return res.json({
-      success: "false",
+      success: false,
       message: "Submission ID is required"
     })
 
@@ -186,31 +199,31 @@ app.get('/status-submission', async (req, res) => {
     const submission = await getSubmissionForUser(token);
     if(!submission) {
       return res.json({
-        success: "false",
+        success: false,
         message: "Invalid submission ID"
       });
     }
 
     if(submission.status !== 'Accepted'){
       res.json({
-        success: "false",
+        success: false,
         message: submission.status
       });
       return;
     }
   }
-  
+
   const matchDetails = await getMatchDetails(req.body.matchId);
 
   if(matchDetails.status === 'pending') { // if true, he is the first person to finish (hence winner)
     
     try {
 
-      const lostPlayerUsername = matchDetails.players[0] === req.body.username ? matchDetails.players[1] : matchDetails.players[0];
-      await addNewMatch(req.body.username, lostPlayerUsername, req.body.matchId, matchDetails.problem.id, matchDetails.playedAt);
+      const lostPlayerUsername = matchDetails.players[0] === req.user.username ? matchDetails.players[1] : matchDetails.players[0];
+      await addNewMatch(req.user.username, lostPlayerUsername, req.body.matchId, matchDetails.problem.id, matchDetails.playedAt);
       
       // get winner and opponent players details before this match
-      const winner = await checkPlayer(req.body.username);
+      const winner = await checkPlayer(req.user.username);
       const opponent = await checkPlayer(lostPlayerUsername);
       // update match results [ranks and players] & get back the rating Difference
       const ratingDifference = await updateMatchResults(winner, opponent, 1);
@@ -220,8 +233,9 @@ app.get('/status-submission', async (req, res) => {
 
       // send back response
       res.json({
-        success: "true",
+        success: true,
         result: "You won the match",
+        message: "All test cases passed",
         ratingDifference: ratingDifference.winner
       });
     } catch (error) {
@@ -229,11 +243,12 @@ app.get('/status-submission', async (req, res) => {
     }
   }
   else{
-    console.log(matchDetails),
+    // console.log(matchDetails),
     res.json({
       
-      success: "true",
-      message: "Better luck next time",
+      success: true,
+      message: "All test cases passed",
+      result: "You lost the match",
       ratingDifference: matchDetails.loser
     });
   }
@@ -242,6 +257,6 @@ app.get('/status-submission', async (req, res) => {
 
 app.listen(port, async () => {
   console.log(`Server listening on port: ${port}`)
-  await matchmakerWorker();
+  matchmakerWorker() 
 })
 

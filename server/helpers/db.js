@@ -23,7 +23,7 @@ export async function findUserByUsernameOrEmail(username, email) {
   });
 
   if(user){
-    return true
+    return user;
   }
     return false;
 }
