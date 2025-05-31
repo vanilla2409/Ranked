@@ -1,0 +1,18 @@
+{
+    "success": "true",
+    "matchDetails": {
+        "matchId": "f399a650-f50b-4e34-ab3b-1a957a0cf361",
+        "players": [
+            "Luffy",
+            "Roronoa"
+        ],
+        "createdAt": 1748439051475,
+        "status": "pending",
+        "problem": {
+            "id": "ea148cb6-ed5e-4fa6-8873-02096a1cc8c5",
+            "slug": "sum-of-even",
+            "description": "### Sum of Even Numbers Given an array of integers, return the sum of all even numbers in the array.  #### Input Format - First line: N (number of elements)   - Second line: N space-separated integers #### Output Format - A single integer — the sum of even numbers #### Constraints - 1 ≤ N ≤ 10^5   - -10^9 ≤ arr[i] ≤ 10^9 #### Example **Input** ``` 5 1 2 3 4 5 ``` **Output** ``` 6 ``` ",
+            "codeSnippet": "int sumOfEven(int arr[],int n){\n     Implementation goes here\n}"
+        }
+    }
+}

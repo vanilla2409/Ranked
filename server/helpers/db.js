@@ -80,3 +80,36 @@ export async function addNewMatch(winnerUsername, opponentUsername, matchId, pro
   });
 }
 
+// this function will return the number of total matches played, and number of matches won by a user
+export async function getMatchesPlayedAndWon(username) {
+  // Get the user's ID from username first
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: { id: true },
+  });
+
+  if (!user) throw new Error("User not found");
+
+  const matchesPlayed = await prisma.match.count({
+    where: {
+      participants: {
+        some: {
+          userId: user.id,
+        },
+      },
+    },
+  });
+
+  const matchesWon = await prisma.match.count({
+    where: {
+      winnerId: user.id,
+    },
+  });
+
+  return {
+    matchesPlayed,
+    matchesWon,
+  };
+}
+
+

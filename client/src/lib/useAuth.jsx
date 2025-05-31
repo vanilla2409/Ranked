@@ -6,6 +6,7 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [userStats, setUserStats] = useState({matchesPlayed: 0, matchesWon: 0});
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -20,6 +21,10 @@ export const AuthProvider = ({ children }) => {
           return;
         }
         setUser(data.user);
+        setUserStats({
+          matchesPlayed: data.matchesPlayed || 0,
+          matchesWon: data.matchesWon || 0,
+        });
       } catch {
         setUser(null);
       } finally {
@@ -36,7 +41,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout }}>
+    <AuthContext.Provider value={{ user, userStats, loading, logout }}>
       {children}
     </AuthContext.Provider>
   );

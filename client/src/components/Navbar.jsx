@@ -20,7 +20,7 @@ export const SlideTabsExample = () => {
   return (
     <div className="bg-[#101010] py-4 relative">
       <SlideTabs navigate={navigate} />
-      <div className="absolute" style={{ right: '190px', top: '50%', transform: 'translateY(-50%)' }}>
+      <div className="absolute" style={{ right: '30px', top: '50%', transform: 'translateY(-50%)' }}>
         <LogoutButton />
       </div>
     </div>
@@ -42,8 +42,8 @@ const SlideTabs = ({ navigate }) => {
         <Tab setPosition={setPosition} onClick={() => navigate("/resources")}>
           Learn
         </Tab>
-        <Tab setPosition={setPosition} onClick={() => navigate("/rivals")}>
-          Rivals
+        <Tab setPosition={setPosition} onClick={() => navigate("/leaderboard")}>
+          Leaderboard
         </Tab>
         <Cursor position={position} />
       </ul>
