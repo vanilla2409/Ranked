@@ -29,9 +29,7 @@ def threeSum(nums):
 
 # Read input and run tests (for local testing)
 if __name__ == "__main__":
-    import sys
-    input = sys.stdin.read().split()
-    n = int(input[0])
-    nums = list(map(int, input[1:n+1]))
+    n = int(input())
+    nums = list(map(int, input().split()))
     result = threeSum(nums)
     print(str(result).replace(" ", ""))
