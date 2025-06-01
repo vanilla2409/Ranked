@@ -13,7 +13,7 @@ import { showSuccess } from "./ui/sonner";
 import { useAuth } from "../lib/useAuth";
 import { useNavigate } from "react-router-dom";
 
-export function LogoutButton() {
+export function LogoutButton({ className = "" }) {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
@@ -28,18 +28,27 @@ export function LogoutButton() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="bg-[#101010] text-white hover:bg-[#232323] hover:text-white border-none shadow-none">
+        <Button
+          variant="outline"
+          className={className}
+        >
           LOG OUT
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="bg-[#181022] border-fuchsia-700">
         <DialogHeader>
-          <DialogTitle>Are you sure?</DialogTitle>
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-fuchsia-500 to-purple-500 bg-clip-text text-transparent">
+            Are you sure?
+          </DialogTitle>
         </DialogHeader>
         <DialogFooter>
-          <Button onClick={handleLogout} className="bg-[#101010] text-white hover:bg-[#232323] hover:text-white border-none shadow-none">Yes, LOG OUT</Button>
+          <Button onClick={handleLogout} className="bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-700 hover:to-purple-700 text-white border-0 font-semibold">
+            Yes, LOG OUT
+          </Button>
           <DialogClose asChild>
-            <Button variant="ghost">Cancel</Button>
+            <Button variant="ghost" className="text-white hover:text-fuchsia-600 hover:bg-fuchsia-900/10 transition-colors">
+              Cancel
+            </Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
