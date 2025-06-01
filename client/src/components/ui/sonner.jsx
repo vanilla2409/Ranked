@@ -34,22 +34,25 @@ const Toaster = ({
   );
 }
 
+// Custom success toast with fuchsia gradient
 export function showSuccess(message) {
   toast.success(message, {
-    duration: 3000,
-    position: "bottom-center",
-    style: { background: '#A594F9', color: '#fff' },
-    className: '!text-white',
+    style: {
+      background: "linear-gradient(to right, #d946ef, #a21caf)",
+      color: "#fff",
+      border: "none",
+      boxShadow: "0 2px 16px 0 rgba(236, 72, 153, 0.15)",
+    },
+    iconTheme: {
+      primary: "#d946ef",
+      secondary: "#a21caf"
+    }
   });
 }
 
+// Keep error toast default (or customize as needed)
 export function showError(message) {
-  toast.error(message, {
-    duration: 3000,
-    position: "bottom-center",
-    style: { background: '#101010', color: '#fff' },
-    className: '!text-white',
-  });
+  toast.error(message);
 }
 
 export { Toaster }
