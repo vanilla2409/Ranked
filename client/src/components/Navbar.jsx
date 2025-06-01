@@ -20,7 +20,7 @@ export const SlideTabsExample = () => {
   return (
     <div className="bg-[#101010] py-4 relative">
       <SlideTabs navigate={navigate} />
-      <div className="absolute" style={{ right: '30px', top: '50%', transform: 'translateY(-50%)' }}>
+      <div className="absolute" style={{ right: '50px', top: '50%', transform: 'translateY(-50%)' }}>
         <LogoutButton className="bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-700 hover:to-purple-700 text-white !text-white hover:!text-white focus:!text-white border-0 font-semibold px-6 py-2 rounded-md shadow-lg shadow-fuchsia-500/25 hover:shadow-fuchsia-500/40 transition-all duration-300" />
       </div>
     </div>
@@ -31,7 +31,7 @@ const SlideTabs = ({ navigate }) => {
   const [position, setPosition] = useState({ left: 0, width: 0, opacity: 0 });
 
   return (
-    <div className="flex items-center justify-center w-full max-w-[2000px] mx-auto relative">
+    <div className="flex items-center justify-center w-full max-w-[1500px] mx-auto relative">
       <ul
         onMouseLeave={() => setPosition((pv) => ({ ...pv, opacity: 0 }))}
         className="relative flex justify-center items-center flex-1 rounded-full border-2 border-fuchsia-700 bg-[#101010] p-1"
