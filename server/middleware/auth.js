@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 const auth = (req, res, next) => {
-  console.log('Auth middleware triggered');
+  // console.log('Auth middleware triggered');
   const token = req.cookies?.token;
   if (!token) return res.status(401).json({ success: false, message: 'Missing Auth cookie' });
   try {

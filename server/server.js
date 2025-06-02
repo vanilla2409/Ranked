@@ -70,13 +70,29 @@ app.put('/judge0/callback', async (req, res) => {
 app.use(auth)
 
 app.post('/submit', async (req, res) => {
-  const { problemId , solutionCode } = req.body;
+  const { problemId , solutionCode, matchId } = req.body;
+  const { username } = req.user;
 
   if(!problemId || !solutionCode)
     return res.json({
       success: false,
       message: "Problem ID and solution code are required"
     })
+  
+  const matchDetails = await getMatchDetails(matchId);
+
+  if(!matchDetails)
+    return res.json({
+      success: false,
+      message: "Time limit exceeded for this match. Rating will be decresed only if your opponent was able to solve it"
+    })
+
+  if(matchDetails.successfulSubmission?.[username]){
+    return res.json({
+      success: false,
+      message:"You have already submitted correct solution in this match"
+    })
+  }
 
   const problem = await prisma.problem.findFirst({
     where:{
@@ -91,7 +107,9 @@ app.post('/submit', async (req, res) => {
     })
   
   let fullCode = fs.readFileSync(`${process.env.PATH_TO_PROBLEMS}/${problem.slug}/boilerplateFullCode.txt`, 'utf8').replace('##USER_CODE##', solutionCode);
-  console.log('Full code:', fullCode);
+
+  //console.log('Full code:', fullCode);
+
   const testCases = loadTestCases(problem.slug);
   const submissions = testCases.map(tc => ({
     source_code: fullCode,
@@ -228,8 +246,8 @@ app.post('/status-submission', async (req, res) => {
       // update match results [ranks and players] & get back the rating Difference
       const ratingDifference = await updateMatchResults(winner, opponent, 1);
 
-      // update matchData for opponent
-      await updateMatchDetails(req.body.matchId, ratingDifference)
+      // update matchData for opponent and set successfulSubmission of user to true
+      await updateMatchDetails(req.body.matchId, ratingDifference, req.user.username)
 
       // send back response
       res.json({
@@ -243,7 +261,9 @@ app.post('/status-submission', async (req, res) => {
     }
   }
   else{
-    // console.log(matchDetails),
+
+    await updateMatchDetails(req.body.matchId, matchDetails.ratingDifference, req.user.username);
+
     res.json({
       
       success: true,
