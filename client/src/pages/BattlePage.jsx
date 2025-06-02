@@ -36,7 +36,7 @@ function BattlePage({ matchDetails }) {
   // Timer logic
   useEffect(() => {
     const createdAt = matchDetails.createdAt; // in ms
-    const endTime = createdAt + 1 * 60 * 1000;
+    const endTime = createdAt + 45 * 60 * 1000;
 
     const updateTimer = () => {
       const now = Date.now();
