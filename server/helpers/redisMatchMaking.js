@@ -70,15 +70,22 @@ async function createMatch(player1Id, player2Id) {
           description: true,
           codeSnippet: true,
         },
-    }), // you can set problem here
+    }),
+    successfulSubmission: {
+      [player1Id]: false,
+      [player2Id]: false,
+    },
   };
 
   // Save match object
   await redis.set(`${MATCH_DATA_PREFIX}${matchId}`, JSON.stringify(matchData));
-
+  await redis.expire(`${MATCH_DATA_PREFIX}${matchId}`, (45 * 60) + 10); // 45 minutes + 10 seconds
   // Allow each player to lookup their match
   await redis.set(`${PLAYER_MATCH_PREFIX}${player1Id}`, matchId);
+  await redis.expire(`${PLAYER_MATCH_PREFIX}${player1Id}`, (45 * 60) + 10); // 45 minutes + 10 seconds
+
   await redis.set(`${PLAYER_MATCH_PREFIX}${player2Id}`, matchId);
+  await redis.expire(`${PLAYER_MATCH_PREFIX}${player2Id}`, (45 * 60) + 10); // 45 minutes + 10 seconds
 
   console.log(`✅ Match Created: ${matchId} between ${player1Id} and ${player2Id}`);
 }
@@ -123,7 +130,7 @@ export async function getMatchForPlayer(playerId) {
 
   const matchData = await redis.get(`${MATCH_DATA_PREFIX}${matchId}`);
 
-  if (!matchData) {
+  if (!matchData || matchData.status === "completed") {
     return null;
   }
   return JSON.parse(matchData);
@@ -139,12 +146,21 @@ export async function getMatchDetails(matchId) {
   return JSON.parse(matchData);
 }
 
-export async function updateMatchDetails(matchId, updates) {
+export async function updateMatchDetails(matchId, updates, usernameOfSuccessfulSubmissionPlayer) {
   const matchData = await getMatchDetails(matchId);
   if (!matchData) {
     return null;
   }
-  const updatedMatchData = { ...matchData, ...updates, status: "completed" };
+  const updatedMatchData = { 
+    ...matchData,
+    ...updates,
+    status: "completed",
+    successfulSubmission: {
+      ...matchData.successfulSubmission,
+      [usernameOfSuccessfulSubmissionPlayer]: true,
+    },
+  };
+
   await redis.set(`${MATCH_DATA_PREFIX}${matchId}`, JSON.stringify(updatedMatchData));
   return;
 }

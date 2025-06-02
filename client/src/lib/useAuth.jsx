@@ -8,30 +8,30 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [userStats, setUserStats] = useState({matchesPlayed: 0, matchesWon: 0});
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const {data} = await axios.get('/users/profile', {
-          withCredentials: true,
-        });
-        console.log(data);
-        if(data.success === false) {
-          console.log('Not authenticated');
-          setUser(null);
-          return;
-        }
-        setUser(data.user);
-        setUserStats({
-          matchesPlayed: data.matchesPlayed || 0,
-          matchesWon: data.matchesWon || 0,
-        });
-      } catch {
+  const checkAuth = async () => {
+    try {
+      const { data } = await axios.get('/users/profile', {
+        withCredentials: true,
+      });
+      // console.log(data);
+      if (data.success === false) {
+        console.log('Not authenticated');
         setUser(null);
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
-
+      setUser(data.user);
+      setUserStats({
+        matchesPlayed: data.matchesPlayed || 0,
+        matchesWon: data.matchesWon || 0,
+      });
+    } catch {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
     checkAuth();
   }, []);
 
@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, userStats, loading, logout, setUser }}>
+    <AuthContext.Provider value={{ user, userStats, loading, logout, setUser, refetch: checkAuth }}>
       {children}
     </AuthContext.Provider>
   );

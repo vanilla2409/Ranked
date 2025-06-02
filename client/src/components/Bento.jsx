@@ -32,7 +32,7 @@ export const RevealBento = () => {
       </motion.div>
       <div className="flex justify-center mt-8">
         <button
-          className="bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-700 hover:to-purple-700 text-white border-0 shadow-none px-8 py-3 text-lg font-semibold rounded-md"
+          className="transition delay-150 duration-300 ease-in-out hover:-translate-y-1 hover:scale-110 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:bg-purple-700 text-white border-0 shadow-none px-12 py-5 text-3xl font-semibold rounded-md"
           onClick={() => navigate("/battle")}
         >
           Compete
@@ -58,11 +58,11 @@ const HeaderBlock = ({ user }) => {
       <h1 className="mb-2 text-4xl font-bold text-center">
         {user.username}
       </h1>
-      <div className="text-lg text-zinc-400 font-medium text-center mb-1">
-        Rank: {user.rank ? user.rank : "Unranked"}
+      <div className="text-2xl text-yellow-300 font-medium text-center mb-1">
+        Rank: #{user.rank ? user.rank : "Unranked"}
       </div>
-      <div className="text-base text-zinc-400 font-medium text-center">
-        ELO: {user.elo !== null ? user.elo : "-"}
+      <div className="text-xl text-purple-600 font-medium text-center">
+        Rating: {user.elo !== null ? Math.round(user.elo) : "-"}
       </div>
     </Block>
   );
@@ -74,28 +74,28 @@ const SocialsBlock = ({ matchesPlayed, matchesWon, matchesLost, winRate }) => (
       whileHover={{ rotate: "2.5deg", scale: 1.1 }}
       className="col-span-6 bg-zinc-800 md:col-span-3 flex flex-col items-start justify-center text-sm font-medium relative"
     >
-      <span className="mt-[-16px] mb-2">Matches</span>
+      <span className="mt-[-16px] mb-2 text-2xl">Matches</span>
       <span className="mt-2 text-2xl font-bold">{matchesPlayed}</span>
     </Block>
     <Block
       whileHover={{ rotate: "-2.5deg", scale: 1.1 }}
       className="col-span-6 bg-zinc-800 md:col-span-3 flex flex-col items-start justify-center text-sm font-medium relative"
     >
-      <span className="mt-[-16px] mb-2">Won</span>
+      <span className="mt-[-16px] mb-2 text-2xl">Won</span>
       <span className="mt-2 text-2xl font-bold">{matchesWon}</span>
     </Block>
     <Block
       whileHover={{ rotate: "-2.5deg", scale: 1.1 }}
       className="col-span-6 bg-zinc-800 md:col-span-3 flex flex-col items-start justify-center text-sm font-medium relative"
     >
-      <span className="mt-[-16px] mb-2">Lost</span>
+      <span className="mt-[-16px] mb-2 text-2xl">Lost</span>
       <span className="mt-2 text-2xl font-bold">{matchesLost}</span>
     </Block>
     <Block
       whileHover={{ rotate: "2.5deg", scale: 1.1 }}
       className="col-span-6 bg-zinc-800 md:col-span-3 flex flex-col items-start justify-center text-sm font-medium relative"
     >
-      <span className="mt-[-16px] mb-2">Win Rate</span>
+      <span className="mt-[-16px] mb-2 text-2xl">Win Rate</span>
       <span className="mt-2 text-2xl font-bold">{winRate}%</span>
     </Block>
   </>
