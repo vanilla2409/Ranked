@@ -10,14 +10,16 @@ import ReactMarkdown from "react-markdown";
 import axios from "../lib/axios";
 import FindingMatchPage from "./FindingMatch";
 import { LuSwords } from "react-icons/lu";
+import { useAuth } from "../lib/useAuth";
 
 
 
 
 function BattlePage({ matchDetails }) {
   const navigate = useNavigate();
+  const { refetch } = useAuth();
   const [code, setCode] = useState(matchDetails.problem.codeSnippet);
-  const [timer, setTimer] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(45*60);
   const [timerActive, setTimerActive] = useState(true);
   const [resignDialogOpen, setResignDialogOpen] = useState(false);
   const [resultDialogOpen, setResultDialogOpen] = useState(false);
@@ -32,11 +34,23 @@ function BattlePage({ matchDetails }) {
 
 
   // Timer logic
-  React.useEffect(() => {
+  useEffect(() => {
+    const createdAt = matchDetails.createdAt; // in ms
+    const endTime = createdAt + 1 * 60 * 1000;
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const diff = Math.floor((endTime - now) / 1000);
+      setTimeLeft(Math.max(diff, 0));
+    };
+
     if (!timerActive) return;
-    const interval = setInterval(() => setTimer((t) => t + 1), 1000);
+
+    updateTimer(); // Initialize immediately
+    const interval = setInterval(updateTimer, 1000);
+
     return () => clearInterval(interval);
-  }, [timerActive]);
+  }, [matchDetails.createdAt, timerActive]);
 
   const handleSubmit = async () => {
 
@@ -44,6 +58,7 @@ function BattlePage({ matchDetails }) {
       const response = await axios.post('/submit', {
         problemId: matchDetails.problem.id,
         solutionCode: editorRef.current.getValue(),
+        matchId: matchDetails.matchId,
       })
       if (response.data.success) {
         const tokens = response.data.tokens;
@@ -66,10 +81,10 @@ function BattlePage({ matchDetails }) {
                 return; // Exit polling on success
               }
               else {
-                if(res.data.message === "PENDING"){
+                if (res.data.message === "PENDING") {
                   attempts += 1;
                   await new Promise(resolve => setTimeout(resolve, pollingInterval));
-                  continue; 
+                  continue;
                 }
                 setResultDialogTitle("Error");
                 setResultDialogMessage(res.data.message);
@@ -88,32 +103,44 @@ function BattlePage({ matchDetails }) {
         await pollStatus();
 
       }
+      else {
+        setResultDialogTitle("Oops! Times up to submit");
+        setResultDialogMessage(response.data.message);
+        setResultDialogElo(null);
+        setResultDialogOpen(true);
+      }
     } catch (error) {
-      console.error(error);
-      console.error("Error submitting solution:", error.data.message);
+        console.error("Error submitting solution:", error);
     }
   };
 
-  const handleResign = () => {
-    setOutput("You resigned. Better luck next time!");
-    setVerdict("Wrong Answer");
+  const handleResign = async () => {
+    localStorage.removeItem("matchDetails"); // Clear match details from local storage
+    await refetch(); // Refetch user data
     setTimerActive(false);
+    navigate("/dashboard");
+
   };
-  const handleExit = () => {
+  const handleExit = async () => {
     localStorage.removeItem("matchDetails"); // Clear match details from local storage
     setTimerActive(false); // Stop the timer
     setResultDialogOpen(false); // Close any open dialogs
+    await refetch(); // Refetch user data
     navigate("/dashboard");
   };
 
-  const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+  const formatTime = (s) => {
+  const min = Math.floor(s / 60).toString().padStart(2, "0");
+  const sec = (s % 60).toString().padStart(2, "0");
+  return `${min}:${sec}`;
+  };  
 
   return (
     <div className="min-h-screen bg-[#101010] text-white flex flex-col">
       {/* Top bar: Timer & Players */}
       <div className="flex justify-between items-center px-6 py-4 border-b border-fuchsia-700 bg-[#181022]">
         <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="flex items-center gap-4">
-          <span className="text-lg font-mono bg-black/60 px-3 py-1 rounded">⏰ {formatTime(timer)}</span>
+          <span className="text-lg font-mono bg-black/60 px-3 py-1 rounded">⏰ {formatTime(timeLeft)}</span>
         </motion.div>
         <div className="flex-1 flex justify-center">
           <div className="flex items-center gap-8">
@@ -232,7 +259,7 @@ function ResultDialog({ open, onClose, title, message, eloChange }) {
         <div className="text-center my-4">
           <div className="text-lg mb-2">{message}</div>
           {eloChange !== null && (
-            <div className={`text-lg font-semibold ${eloChange > 0 ? 'text-green-400' : 'text-red-400'}`}>{eloChange > 0 ? `+${eloChange} ELO` : `${eloChange} ELO`}</div>
+            <div className={`text-lg font-semibold ${eloChange > 0 ? 'text-green-400' : 'text-red-400'}`}>{eloChange > 0 ? `+${Math.round(eloChange)} elo` : `${Math.round(eloChange)} elo`} </div>
           )}
         </div>
         <DialogFooter>
@@ -330,7 +357,7 @@ export default function MainBattlePage() {
   }
 
   if (!matchDetails) {
-    return <FindingMatchPage attempts={pollingAttempts} maxAttempts={maxAttempts} />;
+    return <FindingMatchPage/>;
   }
 
   return <BattlePage matchDetails={matchDetails} />;
