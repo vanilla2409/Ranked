@@ -54,4 +54,39 @@ export async function getUserRating(userId) {
     }
 }
 
+export async function getLeaderboardPage(page = 1, limit = 10) {
+  const start = (page - 1) * limit;
+  const end = start + limit - 1;
 
+  try {
+    // Get leaderboard entries
+    const entries = await redis.zrevrange('leaderboard', start, end, 'WITHSCORES');
+    // Get total player count
+    const totalPlayers = await redis.zcard('leaderboard'); 
+    
+    const pagedLeaderboard = [];
+    let currentRank = start + 1; // Calculate actual rank
+
+    for (let i = 0; i < entries.length; i += 2) {
+      pagedLeaderboard.push({
+        rank: currentRank++, // Actual rank in leaderboard
+        userId: entries[i],
+        rating: Number(entries[i + 1]),
+      });
+    }
+
+    // Return both leaderboard and pagination data
+    return {
+      leaderboard: pagedLeaderboard,
+      totalPlayers,
+      totalPages: Math.ceil(totalPlayers / limit)
+    };
+  } catch (error) {
+    console.error('Error in paginated leaderboard:', error);
+    return {
+      leaderboard: [],
+      totalPlayers: 0,
+      totalPages: 0
+    };
+  }
+}

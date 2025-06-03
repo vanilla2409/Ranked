@@ -34,6 +34,32 @@ app.get('/', (req, res) => {
   res.send('API is running')
 })
 
+app.get('/api/leaderboard', async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+
+  try {
+    const result = await getLeaderboardPage(page, limit);
+    
+    res.json({
+      success: "true",
+      data: result.leaderboard,
+      pagination: {
+        currentPage: page,
+        totalPages: result.totalPages,
+        totalPlayers: result.totalPlayers,
+        playersPerPage: limit
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    res.status(500).json({
+      success: "false",
+      message: "Failed to load leaderboard"
+    });
+  }
+});
+
 app.get('/leaderboard' , async (req, res) => {
   console.log('Fetching leaderboard with range:', req.params.range);
   const range = req.params.range ? parseInt(req.params.range) : 10; // Default to top 10 if no range is provided
