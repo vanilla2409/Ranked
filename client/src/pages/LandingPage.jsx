@@ -169,7 +169,7 @@ export default function LandingPage() {
     }
   }, []);
 
-  const { user } = useAuth()
+  const { user,setUser } = useAuth()
   const navigate = useNavigate()
   const [loginOpen, setLoginOpen] = useState(false)
   const [signupOpen, setSignupOpen] = useState(false)
@@ -218,6 +218,7 @@ export default function LandingPage() {
         showError(error.response.data.message || "Login failed")
       }
       else {
+        console.log(error)
         showError("An error occurred while logging in")
       }
       setLoading(false)
