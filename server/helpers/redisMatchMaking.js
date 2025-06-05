@@ -82,10 +82,10 @@ async function createMatch(player1Id, player2Id) {
   await redis.expire(`${MATCH_DATA_PREFIX}${matchId}`, (45 * 60) + 10); // 45 minutes + 10 seconds
   // Allow each player to lookup their match
   await redis.set(`${PLAYER_MATCH_PREFIX}${player1Id}`, matchId);
-  await redis.expire(`${PLAYER_MATCH_PREFIX}${player1Id}`, (45 * 60) + 10); // 45 minutes + 10 seconds
+  await redis.expire(`${PLAYER_MATCH_PREFIX}${player1Id}`, 10); 
 
   await redis.set(`${PLAYER_MATCH_PREFIX}${player2Id}`, matchId);
-  await redis.expire(`${PLAYER_MATCH_PREFIX}${player2Id}`, (45 * 60) + 10); // 45 minutes + 10 seconds
+  await redis.expire(`${PLAYER_MATCH_PREFIX}${player2Id}`, 10); 
 
   console.log(`✅ Match Created: ${matchId} between ${player1Id} and ${player2Id}`);
 }
