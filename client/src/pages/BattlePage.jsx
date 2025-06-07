@@ -26,6 +26,7 @@ function BattlePage({ matchDetails }) {
   const [resultDialogTitle, setResultDialogTitle] = useState("");
   const [resultDialogMessage, setResultDialogMessage] = useState("");
   const [resultDialogElo, setResultDialogElo] = useState(null);
+  const [showExitButton, setShowExitButton] = useState(false);
   const editorRef = useRef(null);
 
   const handleEditorDidMount = (editor) => {
@@ -78,6 +79,7 @@ function BattlePage({ matchDetails }) {
                 setResultDialogMessage(res.data.message);
                 setResultDialogElo(res.data.ratingDifference);
                 setResultDialogOpen(true);
+                setShowExitButton(true);
                 return; // Exit polling on success
               }
               else {
@@ -149,7 +151,7 @@ function BattlePage({ matchDetails }) {
             <span className="font-bold text-2xl">{matchDetails.players[1]}</span>
           </div>
         </div>
-        <Button onClick={handleExit} className="bg-slate-950 text-white px-4 py-2 rounded-md"> Exit Match</Button>
+        <Button onClick={handleExit} className={showExitButton ? "" : "hidden " + `bg-slate-950 text-white px-4 py-2 rounded-md`}> Exit Match</Button>
       </div>
       {/* Split screen */}
       <ResizablePanelGroup direction="horizontal" className="flex-1 flex flex-col md:flex-row gap-4 p-4 overflow-auto">
